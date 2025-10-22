@@ -1,4 +1,4 @@
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from fastapi import APIRouter, HTTPException, status
 import structlog
 
@@ -11,18 +11,38 @@ logger = structlog.get_logger()
 router = APIRouter(prefix="/api/v1/services", tags=["services"])
 
 
-@router.get("/", response_model=Dict[str, Any])
-@cached("services", ttl=300)  # Cache for 5 minutes
+@router.get("/test")
+async def test_services():
+    """Test endpoint for services router."""
+    return {
+        "message": "Services router working",
+        "status": "success",
+        "timestamp": "2025-10-22",
+    }
+
+
+@router.get("/all", response_model=Dict[str, Any])
 async def get_services():
     """Get available services from Home Assistant."""
     try:
+        logger.info("Services endpoint called: /api/v1/services/all")
+
         async with HomeAssistantClient() as client:
             services = await client.get_services()
-            logger.info("Retrieved services", count=len(services))
+            logger.info(
+                "Successfully retrieved services",
+                count=len(services),
+                domains=list(services.keys())[:10],
+            )
             return services
+
     except Exception as e:
-        logger.error("Failed to get services", error=str(e))
-        metrics_collector.record_error("get_services_error", "/api/v1/services/")
+        logger.error(
+            "Failed to get services in endpoint",
+            error=str(e),
+            error_type=type(e).__name__,
+        )
+        metrics_collector.record_error("get_services_error", "/api/v1/services/all")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve services: {str(e)}",
@@ -31,20 +51,20 @@ async def get_services():
 
 @router.post("/{domain}/{service}", response_model=ServiceResponse)
 async def call_service(
-    domain: str, service: str, service_data: ServiceCallRequest = None
+    domain: str, service: str, service_data: Optional[ServiceCallRequest] = None
 ):
     """Call a Home Assistant service."""
     try:
         data = service_data.service_data if service_data else None
 
-        async with HomeAssistantClient() as client:
-            result = await client.call_service(domain, service, data)
+        client = HomeAssistantClient()
+        result = await client.call_service(domain, service, data)
 
-            # Invalidate relevant caches
-            cache_manager.invalidate_pattern("states", domain)
+        # Invalidate relevant caches
+        cache_manager.invalidate_pattern("states", domain)
 
-            logger.info("Called service", domain=domain, service=service)
-            return result
+        logger.info("Called service", domain=domain, service=service)
+        return result
 
     except Exception as e:
         logger.error(
@@ -123,8 +143,7 @@ async def batch_call_services(service_calls: List[Dict[str, Any]]):
         )
 
 
-@router.get("/{domain}", response_model=Dict[str, Any])
-@cached("services", ttl=300)
+@router.get("/domain/{domain}", response_model=Dict[str, Any])
 async def get_domain_services(domain: str):
     """Get services for a specific domain."""
     try:

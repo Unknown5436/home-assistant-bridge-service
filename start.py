@@ -19,10 +19,10 @@ def check_requirements():
         import structlog
         import prometheus_client
 
-        print("✅ All required packages are installed")
+        print("All required packages are installed")
         return True
     except ImportError as e:
-        print(f"❌ Missing required package: {e}")
+        print("Missing required package: {e}")
         print("Please run: pip install -r requirements.txt")
         return False
 
@@ -31,17 +31,17 @@ def check_env_file():
     """Check if .env file exists."""
     env_file = Path(".env")
     if env_file.exists():
-        print("✅ .env file found")
+        print(".env file found")
         return True
     else:
-        print("❌ .env file not found")
+        print(".env file not found")
         print("Please copy env.example to .env and configure it")
         return False
 
 
 def main():
     """Main startup function."""
-    print("🚀 Starting Home Assistant Bridge Service")
+    print("Starting Home Assistant Bridge Service")
     print("=" * 50)
 
     # Check requirements

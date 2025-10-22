@@ -174,6 +174,11 @@ def cached(cache_name: str, ttl: Optional[int] = None):
 
             return result
 
+        # Preserve function metadata for FastAPI
+        wrapper.__name__ = func.__name__
+        wrapper.__doc__ = func.__doc__
+        wrapper.__annotations__ = func.__annotations__
+
         return wrapper
 
     return decorator

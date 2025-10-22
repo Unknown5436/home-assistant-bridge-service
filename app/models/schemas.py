@@ -7,10 +7,14 @@ class StateResponse(BaseModel):
 
     entity_id: str
     state: str
-    attributes: Dict[str, Any]
+    attributes: Dict[str, Any] = {}
     last_changed: str
     last_updated: str
+    last_reported: Optional[str] = None
     context: Optional[Dict[str, Any]] = None
+
+    class Config:
+        extra = "allow"  # Allow extra fields from HA
 
 
 class ServiceCallRequest(BaseModel):
@@ -31,18 +35,37 @@ class ServiceResponse(BaseModel):
 class ConfigResponse(BaseModel):
     """Home Assistant configuration response model."""
 
-    latitude: float
-    longitude: float
-    elevation: int
-    unit_system: Dict[str, str]
-    location_name: str
-    time_zone: str
-    components: list
-    config_dir: str
-    whitelist_external_dirs: list
+    # Core fields that should always exist
     version: str
-    safe_mode: bool
-    state: str
+
+    # Common but potentially optional fields
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    elevation: Optional[int] = None
+    unit_system: Optional[Dict[str, str]] = None
+    location_name: Optional[str] = None
+    time_zone: Optional[str] = None
+    components: Optional[list] = None
+    config_dir: Optional[str] = None
+
+    # Additional fields from actual HA response
+    allowlist_external_dirs: Optional[list] = None
+    allowlist_external_urls: Optional[list] = None
+    config_source: Optional[str] = None
+    country: Optional[str] = None
+    currency: Optional[str] = None
+    debug: Optional[bool] = None
+    external_url: Optional[str] = None
+    internal_url: Optional[str] = None
+    language: Optional[str] = None
+    radius: Optional[int] = None
+    recovery_mode: Optional[bool] = None
+    safe_mode: Optional[bool] = None
+    state: Optional[str] = None
+    whitelist_external_dirs: Optional[list] = None
+
+    class Config:
+        extra = "allow"  # Allow extra fields from HA
 
 
 class HealthResponse(BaseModel):

@@ -109,8 +109,15 @@ async def check_rate_limit(request: Request, api_key: str):
 async def auth_middleware(request: Request, call_next):
     """Authentication and rate limiting middleware."""
     try:
-        # Skip auth for health and metrics endpoints
-        if request.url.path in ["/health", "/metrics", "/docs", "/openapi.json"]:
+        # Skip auth for health, metrics, docs, and test endpoints
+        if request.url.path in [
+            "/health",
+            "/metrics",
+            "/docs",
+            "/openapi.json",
+            "/api/v1/services/test",
+            "/status",
+        ]:
             return await call_next(request)
 
         # Authenticate request

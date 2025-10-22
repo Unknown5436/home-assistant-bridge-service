@@ -63,10 +63,10 @@ async def lifespan(app: FastAPI):
     try:
         from app.clients.ha_client import HomeAssistantClient
 
-        async with HomeAssistantClient() as client:
-            ha_connected = await client.check_connection()
-            metrics_collector.set_ha_connection_status(ha_connected)
-            logger.info("Home Assistant connection status", connected=ha_connected)
+        client = HomeAssistantClient()
+        ha_connected = await client.check_connection()
+        metrics_collector.set_ha_connection_status(ha_connected)
+        logger.info("Home Assistant connection status", connected=ha_connected)
     except Exception as e:
         logger.error("Failed to check HA connection", error=str(e))
         metrics_collector.set_ha_connection_status(False)
@@ -102,10 +102,10 @@ app.add_middleware(
 app.middleware("http")(auth_middleware)
 app.middleware("http")(metrics_middleware)
 
-# Include routers
+# Include routers - order matters for route matching
 app.include_router(states.router)
-app.include_router(services.router)
 app.include_router(config.router)
+app.include_router(services.router)
 
 
 @app.get("/health")
@@ -119,8 +119,8 @@ async def health_check():
     try:
         from app.clients.ha_client import HomeAssistantClient
 
-        async with HomeAssistantClient() as client:
-            ha_connected = await client.check_connection()
+        client = HomeAssistantClient()
+        ha_connected = await client.check_connection()
     except Exception as e:
         logger.error("Health check HA connection failed", error=str(e))
 
@@ -171,8 +171,8 @@ async def status():
     try:
         from app.clients.ha_client import HomeAssistantClient
 
-        async with HomeAssistantClient() as client:
-            status_info["connections"]["ha_connected"] = await client.check_connection()
+        client = HomeAssistantClient()
+        status_info["connections"]["ha_connected"] = await client.check_connection()
     except Exception as e:
         logger.error("Status check HA connection failed", error=str(e))
 

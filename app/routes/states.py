@@ -12,33 +12,50 @@ logger = structlog.get_logger()
 router = APIRouter(prefix="/api/v1/states", tags=["states"])
 
 
-@router.get("/", response_model=List[StateResponse])
-@cached("states", ttl=30)  # Cache for 30 seconds
+@router.get("/simple")
+async def simple_test():
+    """Simple test endpoint without any decorators."""
+    return {"message": "Simple test endpoint works", "status": "success"}
+
+
+@router.get("/all")
 async def get_all_states():
     """Get all entity states from Home Assistant."""
     try:
-        async with HomeAssistantClient() as client:
-            states = await client.get_states()
-            logger.info("Retrieved all states", count=len(states))
-            return states
+        client = HomeAssistantClient()
+        states = await client.get_states()
+        logger.info("Retrieved all states", count=len(states))
+        return states
     except Exception as e:
-        logger.error("Failed to get states", error=str(e))
+        logger.error("Failed to get states", error=str(e), error_type=type(e).__name__)
         metrics_collector.record_error("get_states_error", "/api/v1/states/")
+        # Return detailed error information
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve states: {str(e)}",
+            detail={
+                "error": str(e),
+                "error_type": type(e).__name__,
+                "message": f"Failed to retrieve states: {str(e)}",
+            },
         )
 
 
 @router.get("/{entity_id}", response_model=StateResponse)
-@cached("states", ttl=10)  # Cache for 10 seconds
 async def get_state(entity_id: str):
     """Get specific entity state from Home Assistant."""
+    # Validate entity ID format (should be domain.entity_name)
+    if "." not in entity_id or entity_id.count(".") != 1:
+        logger.warning("Invalid entity ID format", entity_id=entity_id)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Invalid entity ID format: {entity_id}. Expected format: domain.entity_name",
+        )
+    
     try:
-        async with HomeAssistantClient() as client:
-            state = await client.get_state(entity_id)
-            logger.info("Retrieved state", entity_id=entity_id)
-            return state
+        client = HomeAssistantClient()
+        state = await client.get_state(entity_id)
+        logger.info("Retrieved state", entity_id=entity_id)
+        return state
     except Exception as e:
         logger.error("Failed to get state", entity_id=entity_id, error=str(e))
         metrics_collector.record_error("get_state_error", f"/api/v1/states/{entity_id}")
@@ -61,14 +78,14 @@ async def set_state(entity_id: str, state_data: Dict[str, Any]):
                 detail="State value is required",
             )
 
-        async with HomeAssistantClient() as client:
-            result = await client.set_state(entity_id, state, attributes)
+        client = HomeAssistantClient()
+        result = await client.set_state(entity_id, state, attributes)
 
-            # Invalidate cache for this entity
-            cache_manager.invalidate_pattern("states", entity_id)
+        # Invalidate cache for this entity
+        cache_manager.invalidate_pattern("states", entity_id)
 
-            logger.info("Set state", entity_id=entity_id, state=state)
-            return result
+        logger.info("Set state", entity_id=entity_id, state=state)
+        return result
 
     except HTTPException:
         raise
@@ -81,22 +98,23 @@ async def set_state(entity_id: str, state_data: Dict[str, Any]):
         )
 
 
-@router.get("/group/{group_id}", response_model=List[StateResponse])
-@cached("states", ttl=30)
+@router.get("/group/{group_id}")
+@cached("states", ttl=30)  # Cache for 30 seconds
 async def get_group_states(group_id: str):
     """Get states for all entities in a group."""
     try:
-        async with HomeAssistantClient() as client:
-            # Get all states and filter by group
-            all_states = await client.get_states()
-            group_states = [
-                state for state in all_states if group_id in state.entity_id
-            ]
+        client = HomeAssistantClient()
+        # Get all states and filter by group
+        all_states = await client.get_states()
+        # Filter by entity_id containing group_id
+        group_states = [
+            state for state in all_states if group_id in state.get("entity_id", "")
+        ]
 
-            logger.info(
-                "Retrieved group states", group_id=group_id, count=len(group_states)
-            )
-            return group_states
+        logger.info(
+            "Retrieved group states", group_id=group_id, count=len(group_states)
+        )
+        return group_states
 
     except Exception as e:
         logger.error("Failed to get group states", group_id=group_id, error=str(e))
@@ -116,30 +134,30 @@ async def batch_update_group_states(group_id: str, updates: List[Dict[str, Any]]
         results = []
         errors = []
 
-        async with HomeAssistantClient() as client:
-            for update in updates:
-                entity_id = update.get("entity_id")
-                state = update.get("state")
-                attributes = update.get("attributes")
+        client = HomeAssistantClient()
+        for update in updates:
+            entity_id = update.get("entity_id")
+            state = update.get("state")
+            attributes = update.get("attributes")
 
-                if not entity_id or not state:
-                    errors.append(f"Invalid update data: {update}")
-                    continue
+            if not entity_id or not state:
+                errors.append(f"Invalid update data: {update}")
+                continue
 
-                try:
-                    result = await client.set_state(entity_id, state, attributes)
-                    results.append(
-                        {"entity_id": entity_id, "success": True, "state": result}
-                    )
+            try:
+                result = await client.set_state(entity_id, state, attributes)
+                results.append(
+                    {"entity_id": entity_id, "success": True, "state": result}
+                )
 
-                    # Invalidate cache for this entity
-                    cache_manager.invalidate_pattern("states", entity_id)
+                # Invalidate cache for this entity
+                cache_manager.invalidate_pattern("states", entity_id)
 
-                except Exception as e:
-                    errors.append(f"Failed to update {entity_id}: {str(e)}")
-                    results.append(
-                        {"entity_id": entity_id, "success": False, "error": str(e)}
-                    )
+            except Exception as e:
+                errors.append(f"Failed to update {entity_id}: {str(e)}")
+                results.append(
+                    {"entity_id": entity_id, "success": False, "error": str(e)}
+                )
 
         logger.info(
             "Batch update completed",

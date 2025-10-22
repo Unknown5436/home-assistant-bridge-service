@@ -16,10 +16,10 @@ router = APIRouter(prefix="/api/v1/config", tags=["config"])
 async def get_config():
     """Get Home Assistant configuration."""
     try:
-        async with HomeAssistantClient() as client:
-            config = await client.get_config()
-            logger.info("Retrieved configuration")
-            return config
+        client = HomeAssistantClient()
+        config = await client.get_config()
+        logger.info("Retrieved configuration")
+        return config
     except Exception as e:
         logger.error("Failed to get config", error=str(e))
         metrics_collector.record_error("get_config_error", "/api/v1/config/")
@@ -33,17 +33,17 @@ async def get_config():
 async def get_health():
     """Get Home Assistant connection health."""
     try:
-        async with HomeAssistantClient() as client:
-            is_connected = await client.check_connection()
+        client = HomeAssistantClient()
+        is_connected = await client.check_connection()
 
-            health_status = {
-                "ha_connected": is_connected,
-                "timestamp": time.time(),
-                "status": "healthy" if is_connected else "unhealthy",
-            }
+        health_status = {
+            "ha_connected": is_connected,
+            "timestamp": time.time(),
+            "status": "healthy" if is_connected else "unhealthy",
+        }
 
-            logger.info("Health check completed", connected=is_connected)
-            return health_status
+        logger.info("Health check completed", connected=is_connected)
+        return health_status
 
     except Exception as e:
         logger.error("Health check failed", error=str(e))

@@ -34,19 +34,20 @@ class HomeAssistantClient:
         if self.client:
             await self.client.aclose()
 
-    async def get_states(self) -> List[StateResponse]:
+    async def get_states(self) -> List[Dict[str, Any]]:
         """Get all entity states from Home Assistant."""
         try:
-            async with self as client:
-                response = await client.get("/api/states")
-                response.raise_for_status()
+            if not self.client:
+                self.client = httpx.AsyncClient(
+                    base_url=self.base_url, headers=self.headers, timeout=30.0
+                )
 
-                states = []
-                for state_data in response.json():
-                    states.append(StateResponse(**state_data))
+            response = await self.client.get("/api/states")
+            response.raise_for_status()
 
-                logger.info("Retrieved all states", count=len(states))
-                return states
+            states = response.json()  # Return raw JSON
+            logger.info("Retrieved all states", count=len(states))
+            return states
 
         except httpx.HTTPError as e:
             logger.error("Failed to get states", error=str(e))
@@ -55,13 +56,17 @@ class HomeAssistantClient:
     async def get_state(self, entity_id: str) -> StateResponse:
         """Get specific entity state from Home Assistant."""
         try:
-            async with self as client:
-                response = await client.get(f"/api/states/{entity_id}")
-                response.raise_for_status()
+            if not self.client:
+                self.client = httpx.AsyncClient(
+                    base_url=self.base_url, headers=self.headers, timeout=30.0
+                )
 
-                state_data = response.json()
-                logger.info("Retrieved state", entity_id=entity_id)
-                return StateResponse(**state_data)
+            response = await self.client.get(f"/api/states/{entity_id}")
+            response.raise_for_status()
+
+            state_data = response.json()
+            logger.info("Retrieved state", entity_id=entity_id)
+            return StateResponse(**state_data)
 
         except httpx.HTTPError as e:
             logger.error("Failed to get state", entity_id=entity_id, error=str(e))
@@ -76,13 +81,17 @@ class HomeAssistantClient:
             if attributes:
                 payload["attributes"] = attributes
 
-            async with self as client:
-                response = await client.post(f"/api/states/{entity_id}", json=payload)
-                response.raise_for_status()
+            if not self.client:
+                self.client = httpx.AsyncClient(
+                    base_url=self.base_url, headers=self.headers, timeout=30.0
+                )
 
-                state_data = response.json()
-                logger.info("Set state", entity_id=entity_id, state=state)
-                return StateResponse(**state_data)
+            response = await self.client.post(f"/api/states/{entity_id}", json=payload)
+            response.raise_for_status()
+
+            state_data = response.json()
+            logger.info("Set state", entity_id=entity_id, state=state)
+            return StateResponse(**state_data)
 
         except httpx.HTTPError as e:
             logger.error("Failed to set state", entity_id=entity_id, error=str(e))
@@ -97,18 +106,22 @@ class HomeAssistantClient:
             if service_data:
                 payload = service_data
 
-            async with self as client:
-                response = await client.post(
-                    f"/api/services/{domain}/{service}", json=payload
+            if not self.client:
+                self.client = httpx.AsyncClient(
+                    base_url=self.base_url, headers=self.headers, timeout=30.0
                 )
-                response.raise_for_status()
 
-                logger.info("Called service", domain=domain, service=service)
-                return ServiceResponse(
-                    success=True,
-                    message=f"Service {domain}.{service} called successfully",
-                    data=response.json() if response.content else None,
-                )
+            response = await self.client.post(
+                f"/api/services/{domain}/{service}", json=payload
+            )
+            response.raise_for_status()
+
+            logger.info("Called service", domain=domain, service=service)
+            return ServiceResponse(
+                success=True,
+                message=f"Service {domain}.{service} called successfully",
+                data=response.json() if response.content else None,
+            )
 
         except httpx.HTTPError as e:
             logger.error(
@@ -121,28 +134,88 @@ class HomeAssistantClient:
     async def get_services(self) -> Dict[str, Any]:
         """Get available services from Home Assistant."""
         try:
-            async with self as client:
-                response = await client.get("/api/services")
-                response.raise_for_status()
+            logger.info(
+                "Attempting to retrieve services from HA", base_url=self.base_url
+            )
 
-                services = response.json()
-                logger.info("Retrieved services", count=len(services))
-                return services
+            if not self.client:
+                self.client = httpx.AsyncClient(
+                    base_url=self.base_url, headers=self.headers, timeout=30.0
+                )
+                logger.info("Created new httpx client for services request")
 
+            # Try the services endpoint
+            logger.info("Making GET request to /api/services")
+            response = await self.client.get("/api/services")
+            logger.info("Received response", status_code=response.status_code)
+
+            response.raise_for_status()
+
+            services = response.json()
+            logger.info(
+                "Successfully parsed services JSON",
+                count=len(services),
+                service_type=type(services).__name__,
+            )
+
+            # Handle both list and dict responses from HA API
+            if isinstance(services, list):
+                logger.info("Services returned as list - converting to dict format")
+                # Convert list to dict format for consistency
+                services_dict = {}
+                for service in services:
+                    if isinstance(service, dict) and "domain" in service:
+                        domain = service["domain"]
+                        if domain not in services_dict:
+                            services_dict[domain] = {}
+                        if "services" in service:
+                            services_dict[domain].update(service["services"])
+                services = services_dict
+                logger.info(
+                    "Converted services to dict format", domains=list(services.keys())
+                )
+
+            return services
+
+        except httpx.HTTPStatusError as e:
+            logger.error(
+                "HTTP error getting services",
+                status_code=e.response.status_code,
+                error=str(e),
+                response_text=e.response.text[:200],
+            )
+            raise Exception(
+                f"Failed to retrieve services (HTTP {e.response.status_code}): {e}"
+            )
         except httpx.HTTPError as e:
-            logger.error("Failed to get services", error=str(e))
+            logger.error(
+                "Connection error getting services",
+                error=str(e),
+                error_type=type(e).__name__,
+            )
+            raise Exception(f"Failed to retrieve services: {e}")
+        except Exception as e:
+            logger.error(
+                "Unexpected error getting services",
+                error=str(e),
+                error_type=type(e).__name__,
+            )
             raise Exception(f"Failed to retrieve services: {e}")
 
     async def get_config(self) -> ConfigResponse:
         """Get Home Assistant configuration."""
         try:
-            async with self as client:
-                response = await client.get("/api/config")
-                response.raise_for_status()
+            if not self.client:
+                self.client = httpx.AsyncClient(
+                    base_url=self.base_url, headers=self.headers, timeout=30.0
+                )
 
-                config_data = response.json()
-                logger.info("Retrieved configuration")
-                return ConfigResponse(**config_data)
+            response = await self.client.get("/api/config")
+            response.raise_for_status()
+
+            config_data = response.json()
+            logger.info("Retrieved configuration")
+            return ConfigResponse(**config_data)
 
         except httpx.HTTPError as e:
             logger.error("Failed to get config", error=str(e))
@@ -151,9 +224,13 @@ class HomeAssistantClient:
     async def check_connection(self) -> bool:
         """Check if Home Assistant is reachable."""
         try:
-            async with self as client:
-                response = await client.get("/api/")
-                return response.status_code == 200
+            if not self.client:
+                self.client = httpx.AsyncClient(
+                    base_url=self.base_url, headers=self.headers, timeout=30.0
+                )
+
+            response = await self.client.get("/api/")
+            return response.status_code == 200
         except Exception as e:
             logger.error("Connection check failed", error=str(e))
             return False
