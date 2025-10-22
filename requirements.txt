@@ -1,0 +1,14 @@
+# Core Dependencies
+fastapi>=0.104.0
+pydantic>=2.5.0
+httpx>=0.25.0
+python-dotenv>=1.0.0
+uvicorn>=0.24.0
+pydantic-settings>=2.1.0
+
+# Advanced features
+prometheus-client>=0.19.0  # Metrics
+websockets>=12.0          # WebSocket support
+cachetools>=5.3.0         # Caching
+structlog>=23.2.0         # Structured logging
+python-multipart>=0.0.6   # Form data support
