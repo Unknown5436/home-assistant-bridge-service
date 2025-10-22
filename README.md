@@ -2,17 +2,23 @@
 
 A secure FastAPI-based intermediary service that enables Cursor AI to interact with Home Assistant's API. The service provides a robust, performant, and maintainable interface for home automation control.
 
-## Features
+[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](docker-compose.yml)
 
-- **RESTful API** - Clean, well-documented endpoints for Home Assistant interaction
-- **Secure Authentication** - API key-based authentication with rate limiting
-- **Real-time Updates** - WebSocket support for live state changes
-- **Caching Layer** - In-memory caching for improved performance
-- **Metrics & Monitoring** - Prometheus metrics for observability
-- **Docker Support** - Easy deployment with Docker and Docker Compose
-- **Comprehensive Testing** - Unit and integration tests included
+## ✨ Features
 
-## Quick Start
+- **🔐 Secure Authentication** - API key-based authentication with rate limiting
+- **🚀 RESTful API** - Clean, well-documented endpoints for Home Assistant interaction
+- **⚡ Real-time Updates** - WebSocket support for live state changes
+- **💾 Intelligent Caching** - In-memory caching with TTL for improved performance
+- **📊 Metrics & Monitoring** - Prometheus metrics for observability
+- **🐳 Docker Support** - Easy deployment with Docker and Docker Compose
+- **🧪 Comprehensive Testing** - Unit and integration tests included
+- **🔄 Batch Operations** - Efficient bulk operations for multiple entities
+
+## 🚀 Quick Start
 
 ### Prerequisites
 
@@ -23,20 +29,17 @@ A secure FastAPI-based intermediary service that enables Cursor AI to interact w
 ### Installation
 
 1. **Clone the repository:**
-
    ```bash
-   git clone <repository-url>
-   cd ha-bridge
+   git clone https://github.com/Unknown5436/home-assistant-bridge-service.git
+   cd home-assistant-bridge-service
    ```
 
 2. **Install dependencies:**
-
    ```bash
    pip install -r requirements.txt
    ```
 
 3. **Configure environment:**
-
    ```bash
    cp env.example .env
    # Edit .env with your Home Assistant settings
@@ -44,24 +47,21 @@ A secure FastAPI-based intermediary service that enables Cursor AI to interact w
 
 4. **Run the service:**
    ```bash
-   python -m app.main
+   python start.py
    ```
 
 ### Docker Deployment
 
-1. **Build and run with Docker Compose:**
+```bash
+# Build and run with Docker Compose
+docker-compose up -d
 
-   ```bash
-   docker-compose up -d
-   ```
+# Or build manually
+docker build -t ha-bridge .
+docker run -p 8000:8000 --env-file .env ha-bridge
+```
 
-2. **Or build manually:**
-   ```bash
-   docker build -t ha-bridge .
-   docker run -p 8000:8000 --env-file .env ha-bridge
-   ```
-
-## Configuration
+## ⚙️ Configuration
 
 ### Environment Variables
 
@@ -79,7 +79,6 @@ A secure FastAPI-based intermediary service that enables Cursor AI to interact w
 ### Home Assistant Setup
 
 1. **Create a Long-lived Access Token:**
-
    - Go to Home Assistant → Profile → Long-lived access tokens
    - Create a new token and copy it to your `.env` file
 
@@ -87,18 +86,15 @@ A secure FastAPI-based intermediary service that enables Cursor AI to interact w
    - Add your API keys to the `API_KEYS` environment variable
    - Use these keys in the `Authorization: Bearer <key>` header
 
-## API Documentation
+## 📚 API Documentation
 
 ### Base URL
-
 ```
 http://localhost:8000/api/v1
 ```
 
 ### Authentication
-
 All API endpoints (except `/health`, `/metrics`) require authentication:
-
 ```bash
 curl -H "Authorization: Bearer your-api-key" http://localhost:8000/api/v1/states/
 ```
@@ -106,7 +102,6 @@ curl -H "Authorization: Bearer your-api-key" http://localhost:8000/api/v1/states
 ### Core Endpoints
 
 #### States
-
 - `GET /api/v1/states/` - Get all entity states
 - `GET /api/v1/states/{entity_id}` - Get specific entity state
 - `POST /api/v1/states/{entity_id}` - Update entity state
@@ -114,19 +109,16 @@ curl -H "Authorization: Bearer your-api-key" http://localhost:8000/api/v1/states
 - `POST /api/v1/states/group/{group_id}/batch` - Batch update group states
 
 #### Services
-
 - `GET /api/v1/services/` - Get available services
 - `POST /api/v1/services/{domain}/{service}` - Call service
 - `POST /api/v1/services/batch` - Batch call services
 - `GET /api/v1/services/{domain}` - Get domain services
 
 #### Configuration
-
 - `GET /api/v1/config/` - Get HA configuration
 - `GET /api/v1/config/health` - Check HA connection health
 
 #### System
-
 - `GET /health` - Service health check
 - `GET /metrics` - Prometheus metrics
 - `GET /status` - Detailed service status
@@ -134,14 +126,12 @@ curl -H "Authorization: Bearer your-api-key" http://localhost:8000/api/v1/states
 ### Example Usage
 
 #### Get All States
-
 ```bash
 curl -H "Authorization: Bearer your-api-key" \
      http://localhost:8000/api/v1/states/
 ```
 
 #### Turn On a Light
-
 ```bash
 curl -X POST \
      -H "Authorization: Bearer your-api-key" \
@@ -151,7 +141,6 @@ curl -X POST \
 ```
 
 #### Call a Service
-
 ```bash
 curl -X POST \
      -H "Authorization: Bearer your-api-key" \
@@ -161,7 +150,6 @@ curl -X POST \
 ```
 
 #### Batch Operations
-
 ```bash
 curl -X POST \
      -H "Authorization: Bearer your-api-key" \
@@ -173,7 +161,7 @@ curl -X POST \
      http://localhost:8000/api/v1/states/group/lights/batch
 ```
 
-## Architecture
+## 🏗️ Architecture
 
 ### Components
 
@@ -200,7 +188,7 @@ curl -X POST \
 - **Connection Pooling** - HTTPX client with connection reuse
 - **Batch Operations** - Efficient bulk operations for multiple entities
 
-## Monitoring
+## 📊 Monitoring
 
 ### Health Checks
 
@@ -236,7 +224,7 @@ Structured JSON logging with configurable levels:
 }
 ```
 
-## Development
+## 🧪 Development
 
 ### Running Tests
 
@@ -271,18 +259,16 @@ The project follows Python best practices:
 5. Ensure all tests pass
 6. Submit a pull request
 
-## Troubleshooting
+## 🔧 Troubleshooting
 
 ### Common Issues
 
 1. **Connection to Home Assistant fails:**
-
    - Check `HA_URL` is correct and accessible
    - Verify `HA_TOKEN` is valid and has proper permissions
    - Ensure Home Assistant is running and API is enabled
 
 2. **Authentication errors:**
-
    - Verify API key is in the `API_KEYS` list
    - Check Authorization header format: `Bearer <key>`
    - Ensure rate limits aren't exceeded
@@ -309,11 +295,11 @@ View logs in Docker:
 docker-compose logs -f ha-bridge
 ```
 
-## License
+## 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Support
+## 🤝 Support
 
 For issues and questions:
 
@@ -321,3 +307,17 @@ For issues and questions:
 2. Review the API documentation
 3. Open an issue on GitHub
 4. Check Home Assistant community forums for HA-specific issues
+
+## 🌟 Features Roadmap
+
+- [ ] Redis caching backend
+- [ ] Database persistence for metrics
+- [ ] Advanced automation triggers
+- [ ] Multi-instance HA support
+- [ ] GraphQL API support
+- [ ] Mobile app integration
+- [ ] Voice control integration
+
+---
+
+**Made with ❤️ for the Home Assistant community**
