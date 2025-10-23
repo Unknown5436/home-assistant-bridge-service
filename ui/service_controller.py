@@ -29,9 +29,75 @@ class ServiceController:
         self.service_url = "http://127.0.0.1:8000"
         self.process: Optional[psutil.Process] = None
         self.start_time: Optional[datetime] = None
-        self._ws_status_cache: Optional[Dict[str, Any]] = None
-        self._ws_status_cache_time: Optional[datetime] = None
-        self._ws_cache_ttl = timedelta(seconds=5)  # Cache WebSocket status for 5 seconds
+
+    def _is_port_in_use(self, port: int) -> bool:
+        """Check if a port is in use"""
+        try:
+            import socket
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.settimeout(1)
+                result = s.connect_ex(('localhost', port))
+                return result == 0
+        except Exception:
+            return False
+
+    def _kill_process_on_port(self, port: int) -> bool:
+        """Kill process using the specified port (non-interactive)"""
+        try:
+            if os.name == "nt":  # Windows
+                import subprocess
+                # Find process using netstat
+                result = subprocess.run(
+                    ["netstat", "-ano"], 
+                    capture_output=True, 
+                    text=True, 
+                    timeout=10
+                )
+                
+                for line in result.stdout.split('\n'):
+                    if f':{port}' in line and 'LISTENING' in line:
+                        parts = line.split()
+                        if len(parts) >= 5:
+                            pid = parts[-1]
+                            try:
+                                # Kill the process
+                                subprocess.run(
+                                    ["taskkill", "/F", "/PID", pid],
+                                    capture_output=True,
+                                    timeout=5
+                                )
+                                logger.info(f"Killed process {pid} on port {port}")
+                                return True
+                            except Exception as e:
+                                logger.warning(f"Failed to kill process {pid}: {e}")
+            else:  # Unix/Linux
+                import subprocess
+                # Find process using lsof
+                result = subprocess.run(
+                    ["lsof", "-ti", f":{port}"], 
+                    capture_output=True, 
+                    text=True, 
+                    timeout=10
+                )
+                
+                if result.stdout.strip():
+                    pid = result.stdout.strip()
+                    try:
+                        # Kill the process
+                        subprocess.run(
+                            ["kill", "-9", pid],
+                            capture_output=True,
+                            timeout=5
+                        )
+                        logger.info(f"Killed process {pid} on port {port}")
+                        return True
+                    except Exception as e:
+                        logger.warning(f"Failed to kill process {pid}: {e}")
+            
+            return False
+        except Exception as e:
+            logger.warning(f"Failed to kill process on port {port}: {e}")
+            return False
 
     def get_service_status(self) -> Dict[str, Any]:
         """Get comprehensive service status"""
@@ -109,19 +175,24 @@ class ServiceController:
                 result["pid"] = status["pid"]
                 return result
 
-            # Start the service
-            if not self.start_script.exists():
-                result["message"] = f"Start script not found: {self.start_script}"
-                return result
-
-            # Start process
+            # Start the service using uvicorn directly (non-interactive)
+            # This avoids the interactive prompts in start.py
             with open(self.log_file, "a", encoding="utf-8", errors="replace") as log_f:
                 # Set environment to prevent encoding issues
                 env = os.environ.copy()
                 env["PYTHONIOENCODING"] = "utf-8"
 
+                # Check if port is in use and kill conflicting process if needed
+                port = 8000
+                if self._is_port_in_use(port):
+                    self._kill_process_on_port(port)
+
                 process = subprocess.Popen(
-                    ["python", str(self.start_script)],
+                    [
+                        "python", "-m", "uvicorn", "app.main:app",
+                        "--host", "0.0.0.0", "--port", str(port),
+                        "--reload"
+                    ],
                     stdout=log_f,
                     stderr=subprocess.STDOUT,
                     cwd=str(self.project_root),
@@ -257,19 +328,12 @@ class ServiceController:
         return logs
 
     def clear_logs(self) -> bool:
-        """Clear service logs by truncating them (handles file locking gracefully)"""
+        """Clear service logs"""
         try:
             if self.log_file.exists():
-                # Try to truncate the file instead of deleting it
-                # This is less likely to fail due to file locking
-                with open(self.log_file, 'w', encoding='utf-8') as f:
-                    f.truncate(0)
+                self.log_file.unlink()
                 logger.info("Service logs cleared")
                 return True
-            return True  # File doesn't exist, consider it "cleared"
-        except PermissionError as e:
-            logger.warning(f"Cannot clear logs - file is locked by another process: {e}")
-            return False
         except Exception as e:
             logger.error(f"Failed to clear logs: {e}")
             return False
@@ -336,36 +400,18 @@ class ServiceController:
         return info
 
     def get_websocket_status(self) -> Dict[str, Any]:
-        """Get WebSocket connection status from service (with caching)."""
-        # Check if cache is still valid
-        now = datetime.now()
-        if (
-            self._ws_status_cache is not None
-            and self._ws_status_cache_time is not None
-            and (now - self._ws_status_cache_time) < self._ws_cache_ttl
-        ):
-            return self._ws_status_cache
-        
-        # Cache expired or doesn't exist, fetch new status
+        """Get WebSocket connection status from service."""
         try:
             import requests
 
-            response = requests.get(f"{self.service_url}/health", timeout=10)
+            response = requests.get(f"{self.service_url}/health", timeout=5)
             if response.status_code == 200:
                 data = response.json()
-                ws_status = data.get(
+                return data.get(
                     "websocket",
                     {"connected": False, "error": "WebSocket info not available"},
                 )
-                # Update cache
-                self._ws_status_cache = ws_status
-                self._ws_status_cache_time = now
-                return ws_status
         except Exception as e:
             logger.error(f"Failed to get WebSocket status: {e}")
 
-        error_status = {"connected": False, "error": "Service not responding"}
-        # Cache error status too to avoid repeated timeouts
-        self._ws_status_cache = error_status
-        self._ws_status_cache_time = now
-        return error_status
+        return {"connected": False, "error": "Service not responding"}
