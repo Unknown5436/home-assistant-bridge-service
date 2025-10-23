@@ -476,6 +476,17 @@ class StartupControlWidget(QWidget):
 
         layout.addWidget(startup_group)
 
+        # Log management group
+        log_group = QGroupBox("Log Management")
+        log_layout = QVBoxLayout(log_group)
+
+        # Clear logs on startup checkbox
+        self.clear_logs_startup = QCheckBox("Clear logs on startup")
+        self.clear_logs_startup.stateChanged.connect(self.on_clear_logs_startup_changed)
+        log_layout.addWidget(self.clear_logs_startup)
+
+        layout.addWidget(log_group)
+
         # Status message
         self.status_msg = QLabel("")
         self.status_msg.setStyleSheet("color: #4ec9b0; font-size: 10pt;")
@@ -496,6 +507,9 @@ class StartupControlWidget(QWidget):
                 settings.startup.startup_behavior, "Minimized to Tray"
             )
             self.behavior_combo.setCurrentText(behavior)
+
+            # Load log settings
+            self.clear_logs_startup.setChecked(settings.logs.clear_on_startup)
 
         except Exception as e:
             logger.error(f"Failed to load startup settings: {e}")
@@ -532,6 +546,21 @@ class StartupControlWidget(QWidget):
 
         except Exception as e:
             logger.error(f"Failed to update startup behavior: {e}")
+            self.status_msg.setText(f"✗ Error: {e}")
+            self.status_msg.setStyleSheet("color: #f48771; font-size: 10pt;")
+
+    def on_clear_logs_startup_changed(self):
+        """Handle clear logs on startup checkbox change"""
+        try:
+            enabled = self.clear_logs_startup.isChecked()
+            ui_config.set_log_setting("clear_on_startup", enabled)
+
+            status = "enabled" if enabled else "disabled"
+            self.status_msg.setText(f"✓ Clear logs on startup {status}")
+            self.status_msg.setStyleSheet("color: #4ec9b0; font-size: 10pt;")
+
+        except Exception as e:
+            logger.error(f"Failed to update log setting: {e}")
             self.status_msg.setText(f"✗ Error: {e}")
             self.status_msg.setStyleSheet("color: #f48771; font-size: 10pt;")
 

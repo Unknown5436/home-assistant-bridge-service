@@ -56,6 +56,13 @@ class ServiceSettings:
 
 
 @dataclass
+class LogSettings:
+    """Log management settings"""
+
+    clear_on_startup: bool = False  # Clear logs when starting the UI
+
+
+@dataclass
 class UISettings:
     """Complete UI settings structure"""
 
@@ -63,6 +70,7 @@ class UISettings:
     startup: StartupSettings = None
     window: WindowSettings = None
     service: ServiceSettings = None
+    logs: LogSettings = None
 
     def __post_init__(self):
         if self.cache is None:
@@ -73,6 +81,8 @@ class UISettings:
             self.window = WindowSettings()
         if self.service is None:
             self.service = ServiceSettings()
+        if self.logs is None:
+            self.logs = LogSettings()
 
 
 class UIConfigManager:
@@ -95,12 +105,14 @@ class UIConfigManager:
                 startup_data = data.get("startup", {})
                 window_data = data.get("window", {})
                 service_data = data.get("service", {})
+                logs_data = data.get("logs", {})
 
                 self.settings = UISettings(
                     cache=CacheSettings(**cache_data),
                     startup=StartupSettings(**startup_data),
                     window=WindowSettings(**window_data),
                     service=ServiceSettings(**service_data),
+                    logs=LogSettings(**logs_data),
                 )
 
                 logger.info("UI settings loaded successfully")
@@ -123,6 +135,7 @@ class UIConfigManager:
                 "startup": asdict(self.settings.startup),
                 "window": asdict(self.settings.window),
                 "service": asdict(self.settings.service),
+                "logs": asdict(self.settings.logs),
             }
 
             with open(self.config_file, "w", encoding="utf-8") as f:
@@ -209,6 +222,29 @@ class UIConfigManager:
             return self.save_settings()
         except Exception as e:
             logger.error(f"Failed to update window settings: {e}")
+            return False
+
+    def get_log_setting(self, setting: str) -> Any:
+        """Get log setting"""
+        if setting == "clear_on_startup":
+            return self.settings.logs.clear_on_startup
+        else:
+            logger.warning(f"Unknown log setting: {setting}")
+            return None
+
+    def set_log_setting(self, setting: str, value: bool) -> bool:
+        """Set log setting"""
+        try:
+            if setting == "clear_on_startup":
+                self.settings.logs.clear_on_startup = value
+            else:
+                logger.warning(f"Unknown log setting: {setting}")
+                return False
+
+            return self.save_settings()
+
+        except Exception as e:
+            logger.error(f"Failed to set log setting: {e}")
             return False
 
     def get_all_settings(self) -> UISettings:

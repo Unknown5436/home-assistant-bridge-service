@@ -152,6 +152,19 @@ def main():
         settings = ui_config.get_all_settings()
         logger.info(f"Loaded UI settings: {settings}")
 
+        # Clear logs on startup if enabled
+        if settings.logs.clear_on_startup:
+            logger.info("Clearing logs on startup...")
+            service_controller.clear_logs()
+            # Also clear UI log
+            ui_log_file = project_root / "ui.log"
+            if ui_log_file.exists():
+                try:
+                    ui_log_file.unlink()
+                    logger.info("UI log cleared")
+                except Exception as e:
+                    logger.error(f"Failed to clear UI log: {e}")
+
         # Auto-start service if requested and not running
         if args.auto_start_service or settings.service.auto_start:
             status = service_controller.get_service_status()
