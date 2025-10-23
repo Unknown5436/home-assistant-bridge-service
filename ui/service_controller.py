@@ -29,6 +29,9 @@ class ServiceController:
         self.service_url = "http://127.0.0.1:8000"
         self.process: Optional[psutil.Process] = None
         self.start_time: Optional[datetime] = None
+        self._ws_status_cache: Optional[Dict[str, Any]] = None
+        self._ws_status_cache_time: Optional[datetime] = None
+        self._ws_cache_ttl = timedelta(seconds=5)  # Cache WebSocket status for 5 seconds
 
     def get_service_status(self) -> Dict[str, Any]:
         """Get comprehensive service status"""
@@ -326,18 +329,36 @@ class ServiceController:
         return info
 
     def get_websocket_status(self) -> Dict[str, Any]:
-        """Get WebSocket connection status from service."""
+        """Get WebSocket connection status from service (with caching)."""
+        # Check if cache is still valid
+        now = datetime.now()
+        if (
+            self._ws_status_cache is not None
+            and self._ws_status_cache_time is not None
+            and (now - self._ws_status_cache_time) < self._ws_cache_ttl
+        ):
+            return self._ws_status_cache
+        
+        # Cache expired or doesn't exist, fetch new status
         try:
             import requests
 
-            response = requests.get(f"{self.service_url}/health", timeout=5)
+            response = requests.get(f"{self.service_url}/health", timeout=10)
             if response.status_code == 200:
                 data = response.json()
-                return data.get(
+                ws_status = data.get(
                     "websocket",
                     {"connected": False, "error": "WebSocket info not available"},
                 )
+                # Update cache
+                self._ws_status_cache = ws_status
+                self._ws_status_cache_time = now
+                return ws_status
         except Exception as e:
             logger.error(f"Failed to get WebSocket status: {e}")
 
-        return {"connected": False, "error": "Service not responding"}
+        error_status = {"connected": False, "error": "Service not responding"}
+        # Cache error status too to avoid repeated timeouts
+        self._ws_status_cache = error_status
+        self._ws_status_cache_time = now
+        return error_status
