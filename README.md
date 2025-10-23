@@ -54,8 +54,14 @@ A secure FastAPI-based intermediary service that enables Cursor AI to interact w
 4. **Run the service:**
 
    ```bash
+   # Start the service (handles port conflicts automatically)
    python start.py
+   
+   # Stop the service
+   python stop.py
    ```
+
+   The `start.py` script will automatically detect if port 8000 is in use and offer to terminate the conflicting process.
 
 5. **Launch the Control Panel (Optional):**
 
@@ -356,6 +362,36 @@ The project follows Python best practices:
    - Check if WebSocket is enabled in Home Assistant
    - Verify network connectivity
    - Check firewall settings
+
+4. **Port 8000 already in use:**
+
+   The service will automatically detect port conflicts. When running `python start.py`, you'll be prompted to kill the conflicting process. Alternatively:
+   
+   ```bash
+   # Use stop.py to cleanly shutdown
+   python stop.py
+   
+   # Or manually kill the process (Windows)
+   netstat -ano | findstr :8000
+   taskkill /PID <pid> /F
+   
+   # Or manually kill the process (Linux/Mac)
+   lsof -i :8000
+   kill <pid>
+   ```
+
+5. **Service call API returns 404 errors:**
+
+   Ensure you're using the correct endpoint format with proper JSON structure:
+   
+   ```json
+   POST /api/v1/services/{domain}/{service}
+   {
+     "service_data": {
+       "entity_id": "light.bedroom_ceiling_fan"
+     }
+   }
+   ```
 
 ### Debug Mode
 
