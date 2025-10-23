@@ -1,0 +1,26 @@
+{
+  "cache": {
+    "states_enabled": true,
+    "services_enabled": true,
+    "config_enabled": true,
+    "states_individual_enabled": false,
+    "services_individual_enabled": false
+  },
+  "startup": {
+    "run_on_login": false,
+    "startup_behavior": "minimized"
+  },
+  "window": {
+    "last_position": [
+      248,
+      68
+    ],
+    "last_size": [
+      1324,
+      886
+    ]
+  },
+  "service": {
+    "auto_start": true
+  }
+}

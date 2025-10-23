@@ -53,7 +53,7 @@ def main():
         sys.exit(1)
 
     # Start the service
-    print("\n🔄 Starting service...")
+    print("\n[*] Starting service...")
     try:
         subprocess.run(
             [
@@ -70,9 +70,9 @@ def main():
             check=True,
         )
     except KeyboardInterrupt:
-        print("\n👋 Service stopped by user")
+        print("\n[!] Service stopped by user")
     except subprocess.CalledProcessError as e:
-        print(f"\n❌ Service failed to start: {e}")
+        print(f"\n[X] Service failed to start: {e}")
         sys.exit(1)
 
 

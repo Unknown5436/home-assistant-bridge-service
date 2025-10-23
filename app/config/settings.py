@@ -33,6 +33,61 @@ class Settings(BaseSettings):
         env_file = ".env"
         case_sensitive = True
 
+    @property
+    def STATES_CACHE_ENABLED(self) -> bool:
+        """Dynamic cache setting for states API"""
+        try:
+            from .ui_config import ui_config
+
+            return ui_config.get_cache_setting("states")
+        except ImportError:
+            # Fallback if UI config not available
+            return True
+
+    @property
+    def SERVICES_CACHE_ENABLED(self) -> bool:
+        """Dynamic cache setting for services API"""
+        try:
+            from .ui_config import ui_config
+
+            return ui_config.get_cache_setting("services")
+        except ImportError:
+            # Fallback if UI config not available
+            return True
+
+    @property
+    def CONFIG_CACHE_ENABLED(self) -> bool:
+        """Dynamic cache setting for config API"""
+        try:
+            from .ui_config import ui_config
+
+            return ui_config.get_cache_setting("config")
+        except ImportError:
+            # Fallback if UI config not available
+            return True
+
+    @property
+    def STATES_INDIVIDUAL_CACHE_ENABLED(self) -> bool:
+        """Dynamic cache setting for individual state lookups"""
+        try:
+            from .ui_config import ui_config
+
+            return ui_config.get_cache_setting("states_individual")
+        except ImportError:
+            # Fallback if UI config not available (disabled by default)
+            return False
+
+    @property
+    def SERVICES_INDIVIDUAL_CACHE_ENABLED(self) -> bool:
+        """Dynamic cache setting for individual service lookups"""
+        try:
+            from .ui_config import ui_config
+
+            return ui_config.get_cache_setting("services_individual")
+        except ImportError:
+            # Fallback if UI config not available (disabled by default)
+            return False
+
 
 # Global settings instance
 settings = Settings()

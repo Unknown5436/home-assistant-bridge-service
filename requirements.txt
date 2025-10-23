@@ -12,3 +12,8 @@ websockets>=12.0          # WebSocket support
 cachetools>=5.3.0         # Caching
 structlog>=23.2.0         # Structured logging
 python-multipart>=0.0.6   # Form data support
+
+# UI Dependencies
+PyQt6>=6.6.0
+PyQt6-WebEngine>=6.6.0  # For logs viewer if needed
+psutil>=5.9.0  # For process management

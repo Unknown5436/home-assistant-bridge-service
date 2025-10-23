@@ -6,27 +6,46 @@ from app.clients.ha_client import HomeAssistantClient
 from app.models.schemas import ConfigResponse
 from app.cache.manager import cache_manager, cached
 from app.monitoring.metrics import metrics_collector
+from app.config.settings import settings
 
 logger = structlog.get_logger()
 router = APIRouter(prefix="/api/v1/config", tags=["config"])
 
 
-@router.get("/", response_model=ConfigResponse)
-@cached("config", ttl=600)  # Cache for 10 minutes
-async def get_config():
-    """Get Home Assistant configuration."""
-    try:
-        client = HomeAssistantClient()
-        config = await client.get_config()
-        logger.info("Retrieved configuration")
-        return config
-    except Exception as e:
-        logger.error("Failed to get config", error=str(e))
-        metrics_collector.record_error("get_config_error", "/api/v1/config/")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve configuration: {str(e)}",
-        )
+def get_config_impl():
+    """Implementation of get_config without decorator"""
+
+    async def _get_config():
+        """Get Home Assistant configuration."""
+        try:
+            client = HomeAssistantClient()
+            config = await client.get_config()
+            logger.info("Retrieved configuration")
+            return config
+        except Exception as e:
+            logger.error("Failed to get config", error=str(e))
+            metrics_collector.record_error("get_config_error", "/api/v1/config/")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to retrieve configuration: {str(e)}",
+            )
+
+    return _get_config
+
+
+# Apply conditional caching based on UI settings
+if settings.CONFIG_CACHE_ENABLED:
+
+    @router.get("/", response_model=ConfigResponse)
+    @cached("config", ttl=settings.CACHE_TTL)
+    async def get_config():
+        return await get_config_impl()()
+
+else:
+
+    @router.get("/", response_model=ConfigResponse)
+    async def get_config():
+        return await get_config_impl()()
 
 
 @router.get("/health")

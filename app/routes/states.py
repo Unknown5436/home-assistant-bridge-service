@@ -7,6 +7,7 @@ from app.clients.ha_client import HomeAssistantClient
 from app.models.schemas import StateResponse, ServiceCallRequest, ServiceResponse
 from app.cache.manager import cache_manager, cached
 from app.monitoring.metrics import metrics_collector
+from app.config.settings import settings
 
 logger = structlog.get_logger()
 router = APIRouter(prefix="/api/v1/states", tags=["states"])
@@ -18,51 +19,93 @@ async def simple_test():
     return {"message": "Simple test endpoint works", "status": "success"}
 
 
-@router.get("/all")
-async def get_all_states():
-    """Get all entity states from Home Assistant."""
-    try:
-        client = HomeAssistantClient()
-        states = await client.get_states()
-        logger.info("Retrieved all states", count=len(states))
-        return states
-    except Exception as e:
-        logger.error("Failed to get states", error=str(e), error_type=type(e).__name__)
-        metrics_collector.record_error("get_states_error", "/api/v1/states/")
-        # Return detailed error information
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={
-                "error": str(e),
-                "error_type": type(e).__name__,
-                "message": f"Failed to retrieve states: {str(e)}",
-            },
-        )
+def get_all_states_impl():
+    """Implementation of get_all_states without decorator"""
+
+    async def _get_all_states():
+        """Get all entity states from Home Assistant."""
+        try:
+            client = HomeAssistantClient()
+            states = await client.get_states()
+            logger.info("Retrieved all states", count=len(states))
+            return states
+        except Exception as e:
+            logger.error(
+                "Failed to get states", error=str(e), error_type=type(e).__name__
+            )
+            metrics_collector.record_error("get_states_error", "/api/v1/states/")
+            # Return detailed error information
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail={
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                    "message": f"Failed to retrieve states: {str(e)}",
+                },
+            )
+
+    return _get_all_states
 
 
-@router.get("/{entity_id}", response_model=StateResponse)
-async def get_state(entity_id: str):
-    """Get specific entity state from Home Assistant."""
-    # Validate entity ID format (should be domain.entity_name)
-    if "." not in entity_id or entity_id.count(".") != 1:
-        logger.warning("Invalid entity ID format", entity_id=entity_id)
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Invalid entity ID format: {entity_id}. Expected format: domain.entity_name",
-        )
-    
-    try:
-        client = HomeAssistantClient()
-        state = await client.get_state(entity_id)
-        logger.info("Retrieved state", entity_id=entity_id)
-        return state
-    except Exception as e:
-        logger.error("Failed to get state", entity_id=entity_id, error=str(e))
-        metrics_collector.record_error("get_state_error", f"/api/v1/states/{entity_id}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve state for {entity_id}: {str(e)}",
-        )
+# Apply conditional caching based on UI settings
+if settings.STATES_CACHE_ENABLED:
+
+    @router.get("/all")
+    @cached("states", ttl=settings.CACHE_TTL)
+    async def get_all_states():
+        return await get_all_states_impl()()
+
+else:
+
+    @router.get("/all")
+    async def get_all_states():
+        return await get_all_states_impl()()
+
+
+def get_state_impl():
+    """Implementation of get_state without decorator"""
+
+    async def _get_state(entity_id: str):
+        """Get specific entity state from Home Assistant."""
+        # Validate entity ID format (should be domain.entity_name)
+        if "." not in entity_id or entity_id.count(".") != 1:
+            logger.warning("Invalid entity ID format", entity_id=entity_id)
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Invalid entity ID format: {entity_id}. Expected format: domain.entity_name",
+            )
+
+        try:
+            client = HomeAssistantClient()
+            state = await client.get_state(entity_id)
+            logger.info("Retrieved state", entity_id=entity_id)
+            return state
+        except Exception as e:
+            logger.error("Failed to get state", entity_id=entity_id, error=str(e))
+            metrics_collector.record_error(
+                "get_state_error", f"/api/v1/states/{entity_id}"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to retrieve state for {entity_id}: {str(e)}",
+            )
+
+    return _get_state
+
+
+# Apply conditional caching based on UI settings
+if settings.STATES_INDIVIDUAL_CACHE_ENABLED:
+
+    @router.get("/{entity_id}", response_model=StateResponse)
+    @cached("state", ttl=settings.CACHE_TTL)
+    async def get_state(entity_id: str):
+        return await get_state_impl()(entity_id)
+
+else:
+
+    @router.get("/{entity_id}", response_model=StateResponse)
+    async def get_state(entity_id: str):
+        return await get_state_impl()(entity_id)
 
 
 @router.post("/{entity_id}", response_model=StateResponse)

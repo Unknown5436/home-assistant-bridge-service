@@ -6,6 +6,7 @@ from app.clients.ha_client import HomeAssistantClient
 from app.models.schemas import ServiceCallRequest, ServiceResponse
 from app.cache.manager import cache_manager, cached
 from app.monitoring.metrics import metrics_collector
+from app.config.settings import settings
 
 logger = structlog.get_logger()
 router = APIRouter(prefix="/api/v1/services", tags=["services"])
@@ -21,32 +22,51 @@ async def test_services():
     }
 
 
-@router.get("/all", response_model=Dict[str, Any])
-async def get_services():
-    """Get available services from Home Assistant."""
-    try:
-        logger.info("Services endpoint called: /api/v1/services/all")
+def get_services_impl():
+    """Implementation of get_services without decorator"""
 
-        async with HomeAssistantClient() as client:
-            services = await client.get_services()
-            logger.info(
-                "Successfully retrieved services",
-                count=len(services),
-                domains=list(services.keys())[:10],
+    async def _get_services():
+        """Get available services from Home Assistant."""
+        try:
+            logger.info("Services endpoint called: /api/v1/services/all")
+
+            async with HomeAssistantClient() as client:
+                services = await client.get_services()
+                logger.info(
+                    "Successfully retrieved services",
+                    count=len(services),
+                    domains=list(services.keys())[:10],
+                )
+                return services
+
+        except Exception as e:
+            logger.error(
+                "Failed to get services in endpoint",
+                error=str(e),
+                error_type=type(e).__name__,
             )
-            return services
+            metrics_collector.record_error("get_services_error", "/api/v1/services/all")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to retrieve services: {str(e)}",
+            )
 
-    except Exception as e:
-        logger.error(
-            "Failed to get services in endpoint",
-            error=str(e),
-            error_type=type(e).__name__,
-        )
-        metrics_collector.record_error("get_services_error", "/api/v1/services/all")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve services: {str(e)}",
-        )
+    return _get_services
+
+
+# Apply conditional caching based on UI settings
+if settings.SERVICES_CACHE_ENABLED:
+
+    @router.get("/all", response_model=Dict[str, Any])
+    @cached("services", ttl=settings.CACHE_TTL)
+    async def get_services():
+        return await get_services_impl()()
+
+else:
+
+    @router.get("/all", response_model=Dict[str, Any])
+    async def get_services():
+        return await get_services_impl()()
 
 
 @router.post("/{domain}/{service}", response_model=ServiceResponse)
@@ -143,25 +163,46 @@ async def batch_call_services(service_calls: List[Dict[str, Any]]):
         )
 
 
-@router.get("/domain/{domain}", response_model=Dict[str, Any])
-async def get_domain_services(domain: str):
-    """Get services for a specific domain."""
-    try:
-        async with HomeAssistantClient() as client:
-            all_services = await client.get_services()
-            domain_services = all_services.get(domain, {})
+def get_domain_services_impl():
+    """Implementation of get_domain_services without decorator"""
 
-            logger.info(
-                "Retrieved domain services", domain=domain, count=len(domain_services)
+    async def _get_domain_services(domain: str):
+        """Get services for a specific domain."""
+        try:
+            async with HomeAssistantClient() as client:
+                all_services = await client.get_services()
+                domain_services = all_services.get(domain, {})
+
+                logger.info(
+                    "Retrieved domain services",
+                    domain=domain,
+                    count=len(domain_services),
+                )
+                return domain_services
+
+        except Exception as e:
+            logger.error("Failed to get domain services", domain=domain, error=str(e))
+            metrics_collector.record_error(
+                "get_domain_services_error", f"/api/v1/services/{domain}"
             )
-            return domain_services
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to retrieve services for domain {domain}: {str(e)}",
+            )
 
-    except Exception as e:
-        logger.error("Failed to get domain services", domain=domain, error=str(e))
-        metrics_collector.record_error(
-            "get_domain_services_error", f"/api/v1/services/{domain}"
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve services for domain {domain}: {str(e)}",
-        )
+    return _get_domain_services
+
+
+# Apply conditional caching based on UI settings
+if settings.SERVICES_INDIVIDUAL_CACHE_ENABLED:
+
+    @router.get("/domain/{domain}", response_model=Dict[str, Any])
+    @cached("service_domain", ttl=settings.CACHE_TTL)
+    async def get_domain_services(domain: str):
+        return await get_domain_services_impl()(domain)
+
+else:
+
+    @router.get("/domain/{domain}", response_model=Dict[str, Any])
+    async def get_domain_services(domain: str):
+        return await get_domain_services_impl()(domain)
