@@ -257,12 +257,19 @@ class ServiceController:
         return logs
 
     def clear_logs(self) -> bool:
-        """Clear service logs"""
+        """Clear service logs by truncating them (handles file locking gracefully)"""
         try:
             if self.log_file.exists():
-                self.log_file.unlink()
+                # Try to truncate the file instead of deleting it
+                # This is less likely to fail due to file locking
+                with open(self.log_file, 'w', encoding='utf-8') as f:
+                    f.truncate(0)
                 logger.info("Service logs cleared")
                 return True
+            return True  # File doesn't exist, consider it "cleared"
+        except PermissionError as e:
+            logger.warning(f"Cannot clear logs - file is locked by another process: {e}")
+            return False
         except Exception as e:
             logger.error(f"Failed to clear logs: {e}")
             return False

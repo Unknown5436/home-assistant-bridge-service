@@ -155,13 +155,24 @@ def main():
         # Clear logs on startup if enabled
         if settings.logs.clear_on_startup:
             logger.info("Clearing logs on startup...")
-            service_controller.clear_logs()
+            
+            # Clear service logs
+            service_logs_cleared = service_controller.clear_logs()
+            if service_logs_cleared:
+                logger.info("Service logs cleared successfully")
+            else:
+                logger.warning("Service logs could not be cleared (file may be locked)")
+            
             # Also clear UI log
             ui_log_file = project_root / "ui.log"
             if ui_log_file.exists():
                 try:
-                    ui_log_file.unlink()
-                    logger.info("UI log cleared")
+                    # Use truncation approach for UI log too
+                    with open(ui_log_file, 'w', encoding='utf-8') as f:
+                        f.truncate(0)
+                    logger.info("UI log cleared successfully")
+                except PermissionError as e:
+                    logger.warning(f"UI log could not be cleared - file is locked: {e}")
                 except Exception as e:
                     logger.error(f"Failed to clear UI log: {e}")
 
