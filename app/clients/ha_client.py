@@ -117,10 +117,27 @@ class HomeAssistantClient:
             response.raise_for_status()
 
             logger.info("Called service", domain=domain, service=service)
+            logger.debug("Response status", status_code=response.status_code)
+            logger.debug("Response content", content=response.text)
+            
+            # Handle empty response content
+            response_data = None
+            if response.content:
+                try:
+                    response_data = response.json()
+                    logger.debug("Parsed JSON response", data=response_data)
+                except Exception as e:
+                    logger.debug("Failed to parse JSON", error=str(e), raw_content=response.text)
+                    response_data = {"raw_response": response.text}
+            else:
+                # Handle empty response - Home Assistant often returns empty arrays for service calls
+                response_data = []
+                logger.debug("Empty response, setting data to empty array")
+            
             return ServiceResponse(
                 success=True,
                 message=f"Service {domain}.{service} called successfully",
-                data=response.json() if response.content else None,
+                data=response_data,
             )
 
         except httpx.HTTPError as e:

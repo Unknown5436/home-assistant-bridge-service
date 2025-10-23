@@ -1,4 +1,4 @@
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Union
 from pydantic import BaseModel
 
 
@@ -29,7 +29,7 @@ class ServiceResponse(BaseModel):
 
     success: bool
     message: Optional[str] = None
-    data: Optional[Dict[str, Any]] = None
+    data: Optional[Union[Dict[str, Any], list, None]] = None  # Allow dict, list, or None
 
 
 class ConfigResponse(BaseModel):
