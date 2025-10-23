@@ -248,7 +248,7 @@ class HABridgeComprehensiveTester:
 
         tests = [
             ("Health Check", "/health", False),
-            ("API Status", "/status", False),
+            ("API Status", "/health", False),
             ("Service Health Check", "/api/v1/services/test", False),
             ("Config Health", "/api/v1/config/health", True),
             ("Metrics Endpoint", "/metrics", False),
@@ -611,7 +611,7 @@ class HABridgeComprehensiveTester:
 
         # Test WebSocket status
         result = self.test_endpoint(
-            "WebSocket Status Check", "Advanced", "GET", "/status", requires_auth=False
+            "WebSocket Status Check", "Advanced", "GET", "/health", requires_auth=False
         )
         if result.success and result.data:
             ws_status = result.data.get("websocket_status", "unknown")
@@ -923,8 +923,13 @@ class HABridgeComprehensiveTester:
 
     def save_report(self, stats: Dict[str, Any]):
         """Save test report to JSON file"""
+        import os
+
+        # Ensure test_reports directory exists
+        os.makedirs("test_reports", exist_ok=True)
+
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"test_report_{timestamp}.json"
+        filename = f"test_reports/test_report_{timestamp}.json"
 
         report = {
             "timestamp": self.summary.start_time.isoformat(),

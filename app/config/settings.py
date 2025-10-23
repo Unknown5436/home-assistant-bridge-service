@@ -19,6 +19,9 @@ class Settings(BaseSettings):
 
     # Feature flags
     CACHE_TTL: int = 300
+    STATES_CACHE_TTL: int = 60  # States change frequently
+    SERVICES_CACHE_TTL: int = 1800  # Services change rarely
+    CONFIG_CACHE_TTL: int = 3600  # Config changes very rarely
     RATE_LIMIT_REQUESTS: int = 100
     RATE_LIMIT_WINDOW: int = 60
     METRICS_ENABLED: bool = True

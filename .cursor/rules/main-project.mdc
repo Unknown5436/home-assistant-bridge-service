@@ -1,0 +1,70 @@
+---
+description: Home Assistant Bridge Service - Core Development Principles
+alwaysApply: true
+---
+
+# Home Assistant Bridge Service - Core Principles
+
+## Documentation-First Approach
+
+- **ALWAYS** check the `docs/` folder before making any changes
+- **REFERENCE** `docs/README.md` as the central navigation hub
+- **UPDATE** relevant documentation when modifying features
+- **MAINTAIN** documentation accuracy and completeness
+
+## Testing-First Development
+
+- **RUN** comprehensive test suite before and after changes
+- **VALIDATE** all modifications with appropriate test modes
+- **REVIEW** test reports in `test_reports/` directory
+- **ENSURE** test coverage for new features
+
+## Sequential Thinking for Complex Problems
+
+- **USE** Sequential Thinking MCP for debugging complex issues
+- **BREAK DOWN** problems into manageable steps
+- **DOCUMENT** reasoning and decisions
+- **STORE** learnings in Memory MCP for consistency
+
+## Core Workflow
+
+**Documentation → Testing → Implementation → Validation**
+
+## Essential Commands
+
+```bash
+# Run comprehensive tests
+python test_complete_ha_bridge.py full
+
+# Start service
+python start.py
+
+# Launch UI
+python ui_launcher.py
+
+# Test metrics dashboard
+python test_metrics_dashboard.py
+```
+
+## Key Documentation Files
+
+- `docs/README.md` - Central navigation
+- `docs/USER_GUIDE.md` - API usage
+- `docs/DEPLOYMENT_GUIDE.md` - Deployment procedures
+- `docs/SECURITY_REVIEW.md` - Security guidelines
+- `docs/PERFORMANCE_OPTIMIZATION.md` - Performance tuning
+- `docs/TROUBLESHOOTING.md` - Problem resolution
+
+## Performance Targets
+
+- Response time: <2s average
+- Cache hit rate: >80%
+- Error rate: <5%
+- Health score: >80
+
+## MCP Tool Integration
+
+- **Memory MCP**: Store decisions, patterns, and learnings
+- **Filesystem MCP**: Access files when direct access is restricted
+- **Sequential Thinking MCP**: Systematic problem-solving approach
+- **GitHub MCP**: Repository operations and code management

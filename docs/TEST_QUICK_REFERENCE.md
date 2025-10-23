@@ -138,7 +138,7 @@ Duration: 15.45s
 🎉 ALL TESTS PASSED! Service is fully operational.
 ======================================================================
 
-📄 Detailed report saved to: test_report_20251022_203030.json
+📄 Detailed report saved to: test_reports/test_report_20251022_203030.json
 ```
 
 ## Performance Benchmarks
@@ -291,7 +291,7 @@ python test_complete_ha_bridge.py full
 
 ## Test Report Files
 
-Each test run generates: `test_report_YYYYMMDD_HHMMSS.json`
+Each test run generates: `test_reports/test_report_YYYYMMDD_HHMMSS.json`
 
 ```json
 {
@@ -386,7 +386,7 @@ python test_complete_ha_bridge.py
 curl http://127.0.0.1:8000/health
 
 # View latest test report
-cat test_report_*.json | jq '.statistics'
+cat test_reports/test_report_*.json | jq '.statistics'
 
 # Count entities
 curl -s -H "Authorization: Bearer test-api-key-12345" \

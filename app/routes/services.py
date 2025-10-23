@@ -58,7 +58,7 @@ def get_services_impl():
 if settings.SERVICES_CACHE_ENABLED:
 
     @router.get("/all", response_model=Dict[str, Any])
-    @cached("services", ttl=settings.CACHE_TTL)
+    @cached("services", ttl=settings.SERVICES_CACHE_TTL)
     async def get_services():
         return await get_services_impl()()
 
@@ -197,7 +197,7 @@ def get_domain_services_impl():
 if settings.SERVICES_INDIVIDUAL_CACHE_ENABLED:
 
     @router.get("/domain/{domain}", response_model=Dict[str, Any])
-    @cached("service_domain", ttl=settings.CACHE_TTL)
+    @cached("service_domain", ttl=settings.SERVICES_CACHE_TTL)
     async def get_domain_services(domain: str):
         return await get_domain_services_impl()(domain)
 

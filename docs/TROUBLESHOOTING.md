@@ -449,37 +449,180 @@ time.sleep(0.01)  # 10ms delay
 htop  # Watch CPU and memory usage
 ```
 
-### 12. WebSocket Status Issues
+### 13. Batch States Endpoint Validation Error
 
 **Symptom**:
 
 ```
-✅ WebSocket Status Check: 200 (0.123s)
-   📊 websocket_status: disconnected
+❌ Batch States Request: 400 (0.123s)
+   ❌ Error: State value is required
 ```
 
 **Causes**:
 
-- WebSocket feature not enabled
-- Connection to HA WebSocket failed
-- Feature not fully implemented yet
+- FastAPI validation issue with StateResponse model
+- Request/response serialization problem
+- Pydantic model validation conflict
 
 **Solutions**:
 
 ```python
-# Check if WebSocket is enabled
-# In .env:
-WEBSOCKET_ENABLED=True
+# This is a known issue requiring investigation
+# Single state endpoint works correctly
+# Batch endpoint has validation error
 
-# Check service logs for WebSocket errors
-grep -i websocket app.log
+# Workaround: Use individual state requests
+# Instead of batch endpoint, make multiple individual calls
 
-# WebSocket is advanced feature
-# Service can work without it
-# This is informational, not critical failure
+# Check if issue is resolved in latest version
+# Monitor service logs for detailed error information
 
-# Verify HA supports WebSocket API
-# Check HA version and documentation
+# Temporary fix: Use individual state endpoints
+for entity_id in entity_ids:
+    response = requests.get(
+        f"http://127.0.0.1:8000/api/v1/states/{entity_id}",
+        headers={"Authorization": "Bearer test-api-key-12345"}
+    )
+```
+
+### 14. Port Conflict Resolution Issues
+
+**Symptom**:
+
+```
+⚠ Port 8000 is in use by PID 12345
+✗ Port 8000 is still in use after cleanup attempt
+```
+
+**Causes**:
+
+- Previous service instance still running
+- Process terminated but port in TIME_WAIT state
+- Multiple service instances started
+- Other application using port 8000
+
+**Solutions**:
+
+```bash
+# Use automated startup with port conflict resolution
+python start.py --auto-accept-alt-port
+
+# Or specify alternative port
+python start.py --port 8001
+
+# Manual port cleanup
+# Windows:
+netstat -ano | findstr :8000
+taskkill /PID <PID> /F
+
+# Linux/Mac:
+lsof -ti:8000 | xargs kill -9
+
+# Check for TIME_WAIT state
+netstat -an | grep TIME_WAIT
+
+# Wait for OS to release port (usually 2-4 minutes)
+# Or use alternative port
+```
+
+### 15. Missing check_connection Method Error
+
+**Symptom**:
+
+```
+{"error": "'HomeAssistantClient' object has no attribute 'check_connection'", "event": "Failed to check HA connection"}
+```
+
+**Causes**:
+
+- Missing method in HomeAssistantClient class
+- Code version mismatch
+- Incomplete implementation
+
+**Solutions**:
+
+```python
+# Add missing method to HomeAssistantClient
+async def check_connection(self) -> bool:
+    """Check if Home Assistant is reachable."""
+    try:
+        client = await self._get_client()
+        response = await client.get("/api/")
+        return response.status_code == 200
+    except Exception as e:
+        logger.warning("HA connection check failed", error=str(e))
+        return False
+
+# Restart service after adding method
+python start.py
+```
+
+### 16. Authentication Header Format Issues
+
+**Symptom**:
+
+```
+❌ API Request: 401 (0.045s)
+   ❌ Error: Invalid or missing API key
+```
+
+**Causes**:
+
+- Wrong authentication header format
+- Missing Bearer prefix
+- Incorrect header name
+
+**Solutions**:
+
+```python
+# CORRECT format:
+headers = {'Authorization': 'Bearer test-api-key-12345'}
+
+# INCORRECT formats:
+headers = {'X-API-Key': 'test-api-key-12345'}  # Wrong header
+headers = {'Authorization': 'test-api-key-12345'}  # Missing Bearer
+
+# Verify API key in .env file
+cat .env | grep API_KEYS
+
+# Test with curl
+curl -H "Authorization: Bearer test-api-key-12345" \
+  http://127.0.0.1:8000/api/v1/states/all
+```
+
+### 17. WebSocket Connection Timeout
+
+**Symptom**:
+
+```
+{"error": "timed out during opening handshake", "ws_url": "wss://raspberrypieha.duckdns.org:8123/api/websocket"}
+```
+
+**Causes**:
+
+- Home Assistant WebSocket server slow to respond
+- Network latency issues
+- SSL/TLS handshake problems
+- HA server overloaded
+
+**Solutions**:
+
+```python
+# This is not critical - service works without WebSocket
+# WebSocket provides real-time updates but is optional
+
+# Check HA WebSocket directly
+curl -H "Authorization: Bearer YOUR_TOKEN" \
+  https://your-ha-url:8123/api/websocket
+
+# Increase WebSocket timeout in configuration
+WEBSOCKET_TIMEOUT=30  # Increase from default
+
+# Check HA server performance
+# Monitor HA logs for WebSocket issues
+
+# Service will continue with polling-based updates
+# WebSocket reconnection happens automatically
 ```
 
 ## Test Mode Specific Issues

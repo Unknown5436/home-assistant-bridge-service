@@ -20,8 +20,12 @@ class CacheSettings:
     states_enabled: bool = True
     services_enabled: bool = True
     config_enabled: bool = True
-    states_individual_enabled: bool = False  # Individual state lookups - disabled by default
-    services_individual_enabled: bool = False  # Individual service lookups - disabled by default
+    states_individual_enabled: bool = (
+        False  # Individual state lookups - disabled by default
+    )
+    services_individual_enabled: bool = (
+        False  # Individual service lookups - disabled by default
+    )
 
 
 @dataclass
@@ -259,6 +263,60 @@ class UIConfigManager:
         except Exception as e:
             logger.error(f"Failed to reset settings: {e}")
             return False
+
+    def get_groupbox_style(self) -> str:
+        """Get styling for QGroupBox widgets"""
+        return """
+            QGroupBox {
+                font-weight: bold;
+                border: 2px solid #555555;
+                border-radius: 5px;
+                margin-top: 1ex;
+                padding-top: 10px;
+                background-color: #2b2b2b;
+                color: #e0e0e0;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 5px 0 5px;
+                color: #4CAF50;
+            }
+        """
+
+    def get_button_style(self) -> str:
+        """Get styling for QPushButton widgets"""
+        return """
+            QPushButton {
+                background-color: #4CAF50;
+                border: none;
+                color: white;
+                padding: 8px 16px;
+                text-align: center;
+                font-size: 14px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #45a049;
+            }
+            QPushButton:pressed {
+                background-color: #3d8b40;
+            }
+            QPushButton:disabled {
+                background-color: #666666;
+                color: #999999;
+            }
+        """
+
+    def get_label_style(self) -> str:
+        """Get styling for QLabel widgets"""
+        return """
+            QLabel {
+                color: #e0e0e0;
+                background-color: transparent;
+            }
+        """
 
 
 # Global instance for easy access

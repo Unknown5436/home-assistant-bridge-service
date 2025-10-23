@@ -1,0 +1,54 @@
+---
+description: Documentation Standards and Maintenance Procedures
+globs: ["docs/**/*.md", "*.md"]
+alwaysApply: false
+---
+
+# Documentation Standards
+
+## Documentation Navigation
+
+- **START** with `docs/README.md` for project overview
+- **REFERENCE** specific docs based on task type:
+  - **API Usage**: `docs/USER_GUIDE.md`
+  - **Deployment**: `docs/DEPLOYMENT_GUIDE.md`
+  - **Security**: `docs/SECURITY_REVIEW.md`
+  - **Performance**: `docs/PERFORMANCE_OPTIMIZATION.md`
+  - **UI Development**: `docs/UI_README.md`
+  - **WebSocket**: `docs/WEBSOCKET_IMPLEMENTATION.md`
+  - **Troubleshooting**: `docs/TROUBLESHOOTING.md`
+
+## Documentation Maintenance
+
+- **UPDATE** relevant docs when modifying features
+- **ADD** new sections for new functionality
+- **VERIFY** accuracy of examples and code snippets
+- **KEEP** documentation synchronized with code changes
+
+## Enhancement Plan Reference
+
+- **CONSULT** `ha-bridge-enhancement.plan.md` for project roadmap
+- **FOLLOW** established phases and priorities
+- **UPDATE** plan when completing phases
+- **REFERENCE** plan for context and decisions
+
+## Documentation Structure
+
+- `docs/README.md` - Central navigation hub
+- `docs/USER_GUIDE.md` - Practical API usage examples
+- `docs/DEPLOYMENT_GUIDE.md` - Production deployment procedures
+- `docs/SECURITY_REVIEW.md` - Security audit and hardening
+- `docs/PERFORMANCE_OPTIMIZATION.md` - Performance tuning guide
+- `docs/TEST_SUITE_GUIDE.md` - Comprehensive test suite usage
+- `docs/TEST_QUICK_REFERENCE.md` - Quick test commands
+- `docs/TROUBLESHOOTING.md` - Problem resolution guide
+- `docs/UI_README.md` - UI development and usage
+- `docs/WEBSOCKET_IMPLEMENTATION.md` - WebSocket technical details
+- `docs/PROJECT_DESCRIPTION.md` - Project overview and features
+
+## Writing Standards
+
+- **USE** clear, actionable language
+- **INCLUDE** code examples where helpful
+- **MAINTAIN** consistent formatting and structure
+- **UPDATE** timestamps and version information

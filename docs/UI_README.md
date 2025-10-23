@@ -9,6 +9,7 @@ A modern, dark-mode system tray application for managing the Home Assistant Brid
 - **Cache Management**: Enable/disable caching for different API endpoints
 - **Startup Control**: Configure Windows startup behavior
 - **Live Logs**: View service logs in real-time with filtering
+- **Metrics Dashboard**: Real-time performance monitoring with charts and health indicators
 - **Modern Dark UI**: Clean, minimalist dark theme interface
 - **Real-time Monitoring**: Automatic service status updates
 
@@ -19,6 +20,8 @@ A modern, dark-mode system tray application for managing the Home Assistant Brid
 - Python 3.7+
 - PyQt6
 - psutil
+- matplotlib (for metrics charts)
+- numpy (for data processing)
 - All bridge service dependencies
 
 ### Installation
@@ -26,7 +29,7 @@ A modern, dark-mode system tray application for managing the Home Assistant Brid
 1. Install UI dependencies:
 
 ```bash
-pip install PyQt6 psutil Pillow
+pip install PyQt6 psutil Pillow matplotlib numpy
 ```
 
 2. Run the control panel:
@@ -107,13 +110,56 @@ Settings are automatically saved to `ui_settings.json`:
 }
 ```
 
+## Metrics Dashboard
+
+The UI now includes a comprehensive metrics dashboard accessible via the "Metrics Dashboard" tab.
+
+### Features
+
+- **Real-time Performance Monitoring**: Live charts showing response times, request rates, and error rates
+- **Service Health Overview**: Overall health score with connection status indicators
+- **Key Metrics Display**: Response time, request rate, error rate, cache hit rate, and uptime
+- **Interactive Charts**: Switch between different chart types (Response Time, Request Rate, Error Rate, Cache Hit Rate)
+- **Issue Detection**: Automatic detection and display of service issues
+- **Auto-refresh**: Configurable automatic data refresh every 5 seconds
+
+### Chart Types
+
+1. **Response Time**: Shows average response time over time with target lines
+2. **Request Rate**: Displays requests per minute with trend analysis
+3. **Error Rate**: Monitors error percentage with warning/critical thresholds
+4. **Cache Hit Rate**: Tracks cache performance with target indicators
+
+### Health Indicators
+
+- **Health Score**: 0-100 score based on multiple factors
+- **HA Connection**: Real-time Home Assistant connection status
+- **WebSocket Status**: WebSocket connection monitoring
+- **Issue Alerts**: Automatic detection of performance issues
+
+### Usage
+
+1. **Access**: Click the "Metrics Dashboard" tab in the main window
+2. **Auto-refresh**: Toggle auto-refresh on/off as needed
+3. **Manual Refresh**: Use "Refresh Now" button for immediate updates
+4. **Chart Selection**: Choose different chart types from the dropdown
+5. **Issue Monitoring**: Check the "Recent Issues" section for alerts
+
+### Data Sources
+
+The dashboard fetches data from:
+
+- `/status` endpoint: Service status and connection information
+- `/metrics` endpoint: Prometheus-formatted metrics data
+
 ## Architecture
 
 ### Components
 
 - **`ui_launcher.py`**: Main entry point with command line parsing
 - **`ui/tray_app.py`**: System tray application with menu
-- **`ui/main_window.py`**: Main control panel window
+- **`ui/main_window.py`**: Main control panel window with tabbed interface
+- **`ui/metrics_panel.py`**: Real-time metrics dashboard component
 - **`ui/service_controller.py`**: Service management (start/stop/restart)
 - **`ui/startup_manager.py`**: Windows startup management
 - **`ui/assets/icons/`**: System tray icons

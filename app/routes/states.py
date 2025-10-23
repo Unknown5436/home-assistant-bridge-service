@@ -2,9 +2,15 @@ from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, HTTPException, status, Request
 from fastapi.responses import JSONResponse
 import structlog
+import asyncio
 
 from app.clients.ha_client import HomeAssistantClient
-from app.models.schemas import StateResponse, ServiceCallRequest, ServiceResponse
+from app.models.schemas import (
+    StateResponse,
+    ServiceCallRequest,
+    ServiceResponse,
+    BatchStatesRequest,
+)
 from app.cache.manager import cache_manager, cached
 from app.monitoring.metrics import metrics_collector
 from app.config.settings import settings
@@ -51,7 +57,7 @@ def get_all_states_impl():
 if settings.STATES_CACHE_ENABLED:
 
     @router.get("/all")
-    @cached("states", ttl=settings.CACHE_TTL)
+    @cached("states", ttl=settings.STATES_CACHE_TTL)
     async def get_all_states():
         return await get_all_states_impl()()
 
@@ -97,7 +103,7 @@ def get_state_impl():
 if settings.STATES_INDIVIDUAL_CACHE_ENABLED:
 
     @router.get("/{entity_id}", response_model=StateResponse)
-    @cached("state", ttl=settings.CACHE_TTL)
+    @cached("state", ttl=settings.STATES_CACHE_TTL)
     async def get_state(entity_id: str):
         return await get_state_impl()(entity_id)
 
@@ -106,6 +112,70 @@ else:
     @router.get("/{entity_id}", response_model=StateResponse)
     async def get_state(entity_id: str):
         return await get_state_impl()(entity_id)
+
+
+@router.post("/batch")
+async def get_batch_states(request: BatchStatesRequest):
+    """Get multiple entity states in a single request."""
+    try:
+        entity_ids = request.entity_ids
+
+        if not entity_ids:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="No entity IDs provided"
+            )
+
+        client = HomeAssistantClient()
+        results = {}
+        errors = {}
+
+        # Use asyncio.gather for concurrent requests
+        tasks = []
+        for entity_id in entity_ids:
+            # Validate entity ID format
+            if "." not in entity_id or entity_id.count(".") != 1:
+                errors[entity_id] = f"Invalid entity ID format: {entity_id}"
+                continue
+
+            task = client.get_state(entity_id)
+            tasks.append((entity_id, task))
+
+        # Execute all requests concurrently
+        if tasks:
+            entity_ids_list, task_list = zip(*tasks)
+            responses = await asyncio.gather(*task_list, return_exceptions=True)
+
+            for entity_id, response in zip(entity_ids_list, responses):
+                if isinstance(response, Exception):
+                    errors[entity_id] = str(response)
+                else:
+                    # Convert StateResponse object to dictionary for JSON serialization
+                    results[entity_id] = response.model_dump()
+
+        logger.info(
+            "Batch states request completed",
+            requested=len(entity_ids),
+            successful=len(results),
+            errors=len(errors),
+        )
+
+        return {
+            "results": results,
+            "errors": errors,
+            "success_count": len(results),
+            "error_count": len(errors),
+            "total_requested": len(entity_ids),
+        }
+
+    except Exception as e:
+        logger.error(
+            "Failed to get batch states", error=str(e), error_type=type(e).__name__
+        )
+        metrics_collector.record_error("get_batch_states_error", "/api/v1/states/batch")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve batch states: {str(e)}",
+        )
 
 
 @router.post("/{entity_id}", response_model=StateResponse)
@@ -167,64 +237,4 @@ async def get_group_states(group_id: str):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve states for group {group_id}: {str(e)}",
-        )
-
-
-@router.post("/group/{group_id}/batch")
-async def batch_update_group_states(group_id: str, updates: List[Dict[str, Any]]):
-    """Batch update states for entities in a group."""
-    try:
-        results = []
-        errors = []
-
-        client = HomeAssistantClient()
-        for update in updates:
-            entity_id = update.get("entity_id")
-            state = update.get("state")
-            attributes = update.get("attributes")
-
-            if not entity_id or not state:
-                errors.append(f"Invalid update data: {update}")
-                continue
-
-            try:
-                result = await client.set_state(entity_id, state, attributes)
-                results.append(
-                    {"entity_id": entity_id, "success": True, "state": result}
-                )
-
-                # Invalidate cache for this entity
-                cache_manager.invalidate_pattern("states", entity_id)
-
-            except Exception as e:
-                errors.append(f"Failed to update {entity_id}: {str(e)}")
-                results.append(
-                    {"entity_id": entity_id, "success": False, "error": str(e)}
-                )
-
-        logger.info(
-            "Batch update completed",
-            group_id=group_id,
-            success=len(results),
-            errors=len(errors),
-        )
-
-        return {
-            "group_id": group_id,
-            "results": results,
-            "errors": errors,
-            "success_count": len([r for r in results if r["success"]]),
-            "error_count": len(errors),
-        }
-
-    except Exception as e:
-        logger.error(
-            "Failed to batch update group states", group_id=group_id, error=str(e)
-        )
-        metrics_collector.record_error(
-            "batch_update_error", f"/api/v1/states/group/{group_id}/batch"
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to batch update states for group {group_id}: {str(e)}",
         )

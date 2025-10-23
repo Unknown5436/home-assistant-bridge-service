@@ -11,6 +11,7 @@ import subprocess
 import socket
 import time
 import signal
+import argparse
 from pathlib import Path
 
 
@@ -56,13 +57,10 @@ def find_process_on_port(port: int) -> int:
     """Find the PID of the process using the specified port (Windows)."""
     try:
         result = subprocess.run(
-            ["netstat", "-ano"],
-            capture_output=True,
-            text=True,
-            check=True
+            ["netstat", "-ano"], capture_output=True, text=True, check=True
         )
-        
-        for line in result.stdout.split('\n'):
+
+        for line in result.stdout.split("\n"):
             if f":{port}" in line and "LISTENING" in line:
                 parts = line.split()
                 if parts:
@@ -74,20 +72,67 @@ def find_process_on_port(port: int) -> int:
     return None
 
 
-def kill_process_on_port(port: int) -> bool:
+def is_process_running(pid: int) -> bool:
+    """Check if a process with the given PID is still running."""
+    try:
+        if sys.platform == "win32":
+            result = subprocess.run(
+                ["tasklist", "/FI", f"PID eq {pid}"],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            return str(pid) in result.stdout
+        else:
+            os.kill(pid, 0)  # Signal 0 just checks if process exists
+            return True
+    except (OSError, subprocess.CalledProcessError):
+        return False
+
+
+def kill_process_on_port(port: int, auto_accept: bool = False) -> bool:
     """Kill the process using the specified port."""
     pid = find_process_on_port(port)
     if pid:
         try:
             print(f"⚠ Port {port} is in use by PID {pid}")
-            response = input(f"  Kill process {pid}? (y/n): ").strip().lower()
-            if response == 'y':
+
+            # Check if process still exists before trying to kill it
+            if not is_process_running(pid):
+                print(f"✓ Process {pid} has already terminated")
+                print(
+                    f"  Port may be in TIME_WAIT state - waiting for OS to release..."
+                )
+                return True
+
+            if auto_accept:
+                print(f"  Automatically killing process {pid}")
+                response = "y"
+            else:
+                response = input(f"  Kill process {pid}? (y/n): ").strip().lower()
+
+            if response == "y":
                 if sys.platform == "win32":
-                    subprocess.run(["taskkill", "/PID", str(pid), "/F"], check=True)
+                    try:
+                        subprocess.run(["taskkill", "/PID", str(pid), "/F"], check=True)
+                        print(f"✓ Killed process {pid}")
+                    except subprocess.CalledProcessError as e:
+                        # Check if the error is because process doesn't exist
+                        if "not found" in str(e).lower():
+                            print(f"✓ Process {pid} was already terminated")
+                        else:
+                            print(f"✗ Failed to kill process: {e}")
+                            return False
                 else:
-                    os.kill(pid, signal.SIGTERM)
-                    time.sleep(1)
-                print(f"✓ Killed process {pid}")
+                    try:
+                        os.kill(pid, signal.SIGTERM)
+                        time.sleep(1)
+                        print(f"✓ Killed process {pid}")
+                    except ProcessLookupError:
+                        print(f"✓ Process {pid} was already terminated")
+                    except Exception as e:
+                        print(f"✗ Failed to kill process: {e}")
+                        return False
                 return True
             else:
                 print("  Startup cancelled by user")
@@ -96,6 +141,14 @@ def kill_process_on_port(port: int) -> bool:
             print(f"✗ Failed to kill process: {e}")
             return False
     return True
+
+
+def find_available_port(start_port: int = 8000, max_attempts: int = 10) -> int:
+    """Find an available port starting from start_port."""
+    for port in range(start_port, start_port + max_attempts):
+        if not is_port_in_use(port):
+            return port
+    return None
 
 
 def write_pid_file(pid: int):
@@ -125,6 +178,17 @@ def cleanup_pid_file():
 
 def main():
     """Main startup function."""
+    parser = argparse.ArgumentParser(description="Start Home Assistant Bridge Service")
+    parser.add_argument(
+        "--port", type=int, default=8000, help="Port to use (default: 8000)"
+    )
+    parser.add_argument(
+        "--auto-accept-alt-port",
+        action="store_true",
+        help="Automatically accept alternative port if default is unavailable",
+    )
+    args = parser.parse_args()
+
     print("╔" + "═" * 48 + "╗")
     print("║  Home Assistant Bridge Service - Startup      ║")
     print("╚" + "═" * 48 + "╝")
@@ -139,23 +203,48 @@ def main():
         sys.exit(1)
 
     # Check if port is in use
-    port = 8000
+    port = args.port
     if is_port_in_use(port):
         print()
-        if not kill_process_on_port(port):
+        if not kill_process_on_port(port, args.auto_accept_alt_port):
             sys.exit(1)
-        # Wait a moment for port to be released
-        time.sleep(2)
+        # Wait longer for port to be released (TIME_WAIT state)
+        print("  Waiting for port to be released...")
+        time.sleep(5)
+        # Double-check that port is now free
         if is_port_in_use(port):
-            print(f"✗ Port {port} is still in use")
-            sys.exit(1)
+            print(f"✗ Port {port} is still in use after cleanup attempt")
+            print(f"  This may be due to TIME_WAIT state or another process")
+
+            # Try to find an alternative port
+            alt_port = find_available_port(port + 1)
+            if alt_port:
+                print(f"  Found alternative port: {alt_port}")
+                if args.auto_accept_alt_port:
+                    port = alt_port
+                    print(f"✓ Automatically using port {port}")
+                else:
+                    response = (
+                        input(f"  Use port {alt_port} instead? (y/n): ").strip().lower()
+                    )
+                    if response == "y":
+                        port = alt_port
+                        print(f"✓ Using port {port}")
+                    else:
+                        print("  Startup cancelled by user")
+                        sys.exit(1)
+            else:
+                print("  No alternative ports available")
+                sys.exit(1)
+        else:
+            print(f"✓ Port {port} is now available")
 
     # Start the service
     print()
-    print("▶ Starting service on http://0.0.0.0:8000")
+    print(f"▶ Starting service on http://0.0.0.0:{port}")
     print("  Press CTRL+C to stop")
     print()
-    
+
     process = None
     try:
         process = subprocess.Popen(
@@ -171,16 +260,16 @@ def main():
                 "--reload",
             ]
         )
-        
+
         # Give it a moment to start
         time.sleep(2)
-        
+
         # Write PID file
         write_pid_file(process.pid)
-        
+
         # Wait for process to complete
         process.wait()
-        
+
     except KeyboardInterrupt:
         print()
         print("■ Service stopped by user")

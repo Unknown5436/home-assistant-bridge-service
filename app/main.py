@@ -4,6 +4,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 import structlog
 
 from app.config.settings import settings
@@ -41,6 +43,35 @@ logger = structlog.get_logger()
 websocket_client: HomeAssistantWebSocketClient = None
 
 
+async def security_headers_middleware(request: Request, call_next):
+    """Add security headers to all responses"""
+    response = await call_next(request)
+
+    # Security headers
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+
+    # Content Security Policy
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline'; "
+        "style-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data: https:; "
+        "connect-src 'self'"
+    )
+
+    # Strict Transport Security (only for HTTPS)
+    if request.url.scheme == "https":
+        response.headers["Strict-Transport-Security"] = (
+            "max-age=31536000; includeSubDomains"
+        )
+
+    return response
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager."""
@@ -53,7 +84,10 @@ async def lifespan(app: FastAPI):
     if settings.WEBSOCKET_ENABLED:
         logger.info(
             "WebSocket client initialization starting",
-            ws_url=settings.HA_URL.replace("http://", "ws://").replace("https://", "wss://") + "/api/websocket"
+            ws_url=settings.HA_URL.replace("http://", "ws://").replace(
+                "https://", "wss://"
+            )
+            + "/api/websocket",
         )
         websocket_client = HomeAssistantWebSocketClient()
         connected = await websocket_client.connect()
@@ -63,7 +97,7 @@ async def lifespan(app: FastAPI):
         else:
             logger.warning(
                 "Initial WebSocket connection failed - will retry in background",
-                reconnect_attempts=websocket_client.reconnect_attempts
+                reconnect_attempts=websocket_client.reconnect_attempts,
             )
             metrics_collector.set_websocket_connection_status(False)
             # Start background reconnection task
@@ -77,6 +111,13 @@ async def lifespan(app: FastAPI):
         ha_connected = await client.check_connection()
         metrics_collector.set_ha_connection_status(ha_connected)
         logger.info("Home Assistant connection status", connected=ha_connected)
+
+        # Warm up caches if HA is connected
+        if ha_connected:
+            from app.cache.manager import cache_manager
+
+            await cache_manager.warm_cache()
+
     except Exception as e:
         logger.error("Failed to check HA connection", error=str(e))
         metrics_collector.set_ha_connection_status(False)
@@ -100,6 +141,12 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Add security middleware
+app.add_middleware(
+    TrustedHostMiddleware, allowed_hosts=["*"]
+)  # Configure appropriately for production
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -112,6 +159,7 @@ app.add_middleware(
 # Add custom middleware
 app.middleware("http")(auth_middleware)
 app.middleware("http")(metrics_middleware)
+app.middleware("http")(security_headers_middleware)
 
 # Include routers - order matters for route matching
 app.include_router(states.router)
@@ -162,45 +210,13 @@ async def metrics():
     return get_metrics_response()
 
 
-@app.get("/status")
-async def status():
-    """Detailed status endpoint."""
-    global websocket_client
+@app.get("/queue/status")
+async def queue_status():
+    """Priority queue status endpoint."""
+    from app.queue.priority_queue import priority_queue
 
-    status_info = {
-        "service": "Home Assistant Bridge",
-        "version": "1.0.0",
-        "timestamp": time.time(),
-        "settings": {
-            "ha_url": settings.HA_URL,
-            "cache_ttl": settings.CACHE_TTL,
-            "rate_limit_requests": settings.RATE_LIMIT_REQUESTS,
-            "rate_limit_window": settings.RATE_LIMIT_WINDOW,
-            "metrics_enabled": settings.METRICS_ENABLED,
-            "websocket_enabled": settings.WEBSOCKET_ENABLED,
-            "websocket_filter_enabled": settings.WEBSOCKET_FILTER_ENABLED,
-        },
-        "connections": {"ha_connected": False, "websocket": None},
-    }
-
-    # Check HA connection
-    try:
-        from app.clients.ha_client import HomeAssistantClient
-
-        client = HomeAssistantClient()
-        status_info["connections"]["ha_connected"] = await client.check_connection()
-    except Exception as e:
-        logger.error("Status check HA connection failed", error=str(e))
-
-    # Check WebSocket connection
-    if websocket_client:
-        status_info["connections"]["websocket"] = {
-            "connected": websocket_client.is_connected(),
-            "reconnect_attempts": websocket_client.reconnect_attempts,
-            "subscriptions": len(websocket_client.active_subscriptions),
-        }
-
-    return status_info
+    stats = priority_queue.get_stats()
+    return {"queue_status": "active", "stats": stats, "timestamp": time.time()}
 
 
 @app.exception_handler(Exception)

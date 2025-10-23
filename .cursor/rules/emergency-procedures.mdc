@@ -1,0 +1,65 @@
+---
+description: Emergency Procedures and Critical Issue Handling
+alwaysApply: false
+---
+
+# Emergency Procedures
+
+## Service Recovery
+
+- **CHECK** service status and logs
+- **RESTART** service if necessary (`python start.py`)
+- **VALIDATE** functionality after recovery
+- **DOCUMENT** incident and resolution
+
+## Critical Issue Handling
+
+- **IDENTIFY** root cause using sequential thinking
+- **IMPLEMENT** immediate fix if possible
+- **ESCALATE** if resolution exceeds capabilities
+- **COMMUNICATE** status to stakeholders
+
+## Rollback Procedures
+
+- **MAINTAIN** previous working versions
+- **DOCUMENT** rollback procedures
+- **TEST** rollback scenarios
+- **EXECUTE** rollback if necessary
+
+## Common Issues and Solutions
+
+### Port Conflicts
+
+- **CHECK** for processes using port 8000
+- **USE** `python start.py --auto-accept-alt-port` for automatic resolution
+- **KILL** conflicting processes if needed
+
+### Service Won't Start
+
+- **CHECK** Home Assistant connection settings
+- **VERIFY** API key validity
+- **REVIEW** service logs for errors
+- **VALIDATE** environment configuration
+
+### Performance Issues
+
+- **MONITOR** response times and error rates
+- **CHECK** cache hit rates
+- **REVIEW** WebSocket connection status
+- **ANALYZE** metrics dashboard for bottlenecks
+
+### UI Issues
+
+- **RESTART** UI application
+- **CHECK** metrics dashboard connectivity
+- **VERIFY** dark theme consistency
+- **TEST** with `python test_metrics_dashboard.py`
+
+## Emergency Contacts and Resources
+
+- **DOCUMENTATION**: `docs/TROUBLESHOOTING.md`
+- **TESTING**: `python test_complete_ha_bridge.py full`
+- **LOGS**: Check `service.log` and `ui.log`
+- **STATUS**: Use `/status` endpoint for service health
+
+@EmergencyProcedures

@@ -1,0 +1,61 @@
+---
+description: Testing Procedures and Validation Standards
+globs: ["test*.py", "tests/**/*.py"]
+alwaysApply: false
+---
+
+# Testing Procedures
+
+## Comprehensive Test Suite
+
+- **RUN** `python test_complete_ha_bridge.py` for full validation
+- **CHOOSE** appropriate test mode:
+  - `quick` - Essential tests (~1 minute)
+  - `full` - Comprehensive testing (~5 minutes) - **DEFAULT**
+  - `stress` - Load testing (~10 minutes)
+  - `integration` - HA integration testing (~3 minutes)
+
+## Test Execution Workflow
+
+```bash
+# Before making changes
+python test_complete_ha_bridge.py full
+
+# After making changes
+python test_complete_ha_bridge.py full
+
+# For performance validation
+python test_complete_ha_bridge.py stress
+
+# For integration validation
+python test_complete_ha_bridge.py integration
+```
+
+## Test Report Analysis
+
+- **REVIEW** test reports in `test_reports/` directory
+- **CHECK** success rates and performance metrics
+- **IDENTIFY** failing tests and address issues
+- **COMPARE** before/after performance improvements
+
+## UI Testing
+
+- **TEST** UI changes with `python test_metrics_dashboard.py`
+- **VALIDATE** metrics dashboard functionality
+- **VERIFY** dark theme consistency
+- **CHECK** responsive layout and interactions
+
+## Unit Testing
+
+- **RUN** `pytest tests/` for unit test validation
+- **MAINTAIN** test coverage for core modules
+- **ADD** unit tests for new functionality
+- **UPDATE** tests when modifying existing code
+
+## Test Files Structure
+
+- `test_complete_ha_bridge.py` - Comprehensive integration test suite
+- `test_metrics_dashboard.py` - UI metrics dashboard testing
+- `tests/test_main.py` - Unit tests for main.py
+- `tests/test_websocket.py` - Unit tests for WebSocket functionality
+- `test_reports/` - Directory for test report outputs

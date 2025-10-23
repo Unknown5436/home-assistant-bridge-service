@@ -57,6 +57,7 @@ logs/
 .dockerignore
 
 # Testing
+test_reports/
 .coverage
 .pytest_cache/
 htmlcov/

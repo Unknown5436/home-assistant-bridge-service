@@ -17,3 +17,5 @@ python-multipart>=0.0.6   # Form data support
 PyQt6>=6.6.0
 PyQt6-WebEngine>=6.6.0  # For logs viewer if needed
 psutil>=5.9.0  # For process management
+matplotlib>=3.7.0  # For metrics charts
+numpy>=1.24.0  # For data processing

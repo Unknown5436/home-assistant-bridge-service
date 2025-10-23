@@ -1,4 +1,4 @@
-from typing import Dict, Any, Optional, Union
+from typing import Dict, Any, Optional, Union, List
 from pydantic import BaseModel
 
 
@@ -17,6 +17,15 @@ class StateResponse(BaseModel):
         extra = "allow"  # Allow extra fields from HA
 
 
+class BatchStatesRequest(BaseModel):
+    """Request model for batch states endpoint."""
+
+    entity_ids: List[str]
+
+    class Config:
+        extra = "allow"
+
+
 class ServiceCallRequest(BaseModel):
     """Service call request model."""
 
@@ -29,7 +38,9 @@ class ServiceResponse(BaseModel):
 
     success: bool
     message: Optional[str] = None
-    data: Optional[Union[Dict[str, Any], list, None]] = None  # Allow dict, list, or None
+    data: Optional[Union[Dict[str, Any], list, None]] = (
+        None  # Allow dict, list, or None
+    )
 
 
 class ConfigResponse(BaseModel):

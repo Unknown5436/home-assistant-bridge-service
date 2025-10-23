@@ -1,0 +1,54 @@
+---
+description: Backend Development Standards for HA Bridge Service
+globs: ["app/**/*.py", "**/*.py"]
+alwaysApply: false
+---
+
+# Backend Development Standards
+
+## Performance Optimization
+
+- **MONITOR** response times (target: <2s average)
+- **OPTIMIZE** cache TTL settings based on usage patterns
+- **IMPLEMENT** connection pooling and request batching
+- **VALIDATE** performance improvements with stress tests
+
+## Caching Strategy
+
+- **CONFIGURE** appropriate TTL settings:
+  - States: 300s (5 minutes)
+  - Services: 600s (10 minutes)
+  - Config: 1800s (30 minutes)
+- **MONITOR** cache hit rates (target: >80%)
+- **IMPLEMENT** cache warming for frequently accessed data
+
+## Security Requirements
+
+- **NEVER** hardcode credentials or API keys
+- **USE** environment variables for sensitive data
+- **IMPLEMENT** proper authentication and authorization
+- **VALIDATE** input data and sanitize outputs
+- **FOLLOW** `docs/SECURITY_REVIEW.md` guidelines
+
+## API Development
+
+- **MAINTAIN** consistent response formats
+- **IMPLEMENT** proper error handling
+- **USE** Pydantic models for validation
+- **DOCUMENT** API endpoints with examples
+
+## Code Quality
+
+- **FOLLOW** existing code patterns and conventions
+- **MAINTAIN** type hints and documentation strings
+- **USE** proper error handling and logging
+- **ENSURE** security best practices compliance
+
+## File Structure
+
+- `app/main.py` - FastAPI application
+- `app/routes/` - API endpoint definitions
+- `app/clients/` - External service clients
+- `app/cache/` - Caching implementation
+- `app/config/` - Configuration management
+- `app/models/` - Pydantic models

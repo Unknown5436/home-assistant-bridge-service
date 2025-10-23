@@ -12,15 +12,18 @@
   },
   "window": {
     "last_position": [
-      4,
-      82
+      0,
+      -8
     ],
     "last_size": [
-      1324,
-      886
+      1920,
+      1027
     ]
   },
   "service": {
     "auto_start": true
+  },
+  "logs": {
+    "clear_on_startup": true
   }
 }

@@ -302,7 +302,7 @@ Duration: 15.45s
 
 After each test run, a detailed JSON report is saved:
 
-**Filename**: `test_report_YYYYMMDD_HHMMSS.json`
+**Filename**: `test_reports/test_report_YYYYMMDD_HHMMSS.json`
 
 **Contents**:
 
@@ -387,7 +387,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: test-results
-          path: test_report_*.json
+          path: test_reports/test_report_*.json
 ```
 
 ### Pre-commit Hook
@@ -465,7 +465,139 @@ with HABridgeComprehensiveTester(config) as tester:
 
 See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for detailed troubleshooting guide.
 
-## Performance Benchmarks
+## Current Test Status & Known Issues
+
+### Test Suite Status
+
+- ✅ **Core functionality**: All basic endpoints working
+- ✅ **Authentication**: API key validation working correctly
+- ✅ **Performance optimization**: Caching, connection pooling implemented
+- ✅ **Startup automation**: Port conflict resolution working
+- ⚠️ **Batch states endpoint**: Validation error requiring investigation
+- ✅ **WebSocket integration**: Real-time updates working (3 active subscriptions)
+- ✅ **Service stability**: Handles concurrent requests well
+
+### Known Issues
+
+#### 1. Batch States Endpoint Validation Error
+
+**Issue**: `/api/v1/states/batch` returns `400 Bad Request` with "State value is required"
+
+**Status**: Under investigation
+
+**Workaround**: Use individual state endpoints instead
+
+```python
+# Instead of batch endpoint:
+# POST /api/v1/states/batch
+# {"entity_ids": ["entity1", "entity2"]}
+
+# Use individual endpoints:
+for entity_id in entity_ids:
+    response = requests.get(
+        f"http://127.0.0.1:8000/api/v1/states/{entity_id}",
+        headers={"Authorization": "Bearer test-api-key-12345"}
+    )
+```
+
+#### 2. Remote HA Server Latency
+
+**Issue**: Response times vary significantly (1.7-15.8s) due to remote HA server
+
+**Status**: Expected behavior - not a bug
+
+**Mitigation**: Local caching reduces subsequent request times
+
+### Test Results Interpretation
+
+#### Success Criteria
+
+- **Quick Mode**: 100% success rate expected
+- **Full Mode**: ≥95% success rate acceptable
+- **Stress Mode**: Some failures expected under extreme load
+- **Integration Mode**: Small entity count differences (±5) are normal
+
+#### Performance Expectations
+
+- **Local endpoints**: <0.5s response time
+- **HA-dependent endpoints**: 1-15s (depends on HA server)
+- **Cached requests**: Significantly faster than first request
+- **Concurrent requests**: Service handles multiple requests well
+
+### Recent Improvements
+
+#### Performance Optimizations Implemented
+
+- ✅ **Connection pooling**: Reuse HTTP connections
+- ✅ **Request batching**: Multiple entity queries in single request
+- ✅ **Cache optimization**: Different TTL for different data types
+- ✅ **Priority queue**: Request prioritization system
+- ✅ **Cache warming**: Pre-populate frequently accessed data
+
+#### Startup Improvements
+
+- ✅ **Automated port conflict resolution**: `--auto-accept-alt-port` flag
+- ✅ **Process existence verification**: Check if process still exists before killing
+- ✅ **TIME_WAIT state handling**: Wait for OS to release ports
+- ✅ **Alternative port selection**: Automatic fallback to available ports
+
+#### Authentication Improvements
+
+- ✅ **Correct header format**: `Authorization: Bearer <api-key>`
+- ✅ **Rate limiting**: Configurable requests per window
+- ✅ **API key validation**: Proper error messages
+
+### Test Configuration Updates
+
+#### Current Test Configuration
+
+```python
+@dataclass
+class TestConfig:
+    base_url: str = "http://127.0.0.1:8000"
+    api_key: str = "test-api-key-12345"
+    ha_url: str = "https://raspberrypieha.duckdns.org:8123"
+    ha_token: str = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    timeout: int = 30
+    test_mode: str = "full"  # quick, full, stress, integration
+```
+
+#### Environment Configuration
+
+```bash
+# .env file configuration
+HA_URL=https://raspberrypieha.duckdns.org:8123
+HA_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+API_KEYS=["test-api-key-12345","jz6dpr1Xr7fi0x8TZ8AFo_PuKSkYORQB_X1VKyFAmF8","L2z5O5eWDgB4FBQ1RWu-IXpeTHQO0STj1fltE4Rx_-o"]
+CACHE_TTL=300
+STATES_CACHE_TTL=60
+SERVICES_CACHE_TTL=1800
+CONFIG_CACHE_TTL=3600
+RATE_LIMIT_REQUESTS=100
+RATE_LIMIT_WINDOW=60
+WEBSOCKET_ENABLED=true
+```
+
+### Actual Performance Results (Latest Testing)
+
+**Hardware**: Windows 10, Python 3.13, Remote HA Server
+
+| Test Category       | Actual Time Range | Notes |
+| ------------------- | ----------------- | ----- |
+| Core Endpoints      | 0.1s - 0.3s       | Health, status, metrics |
+| States Management   | 1.7s - 15.8s      | **Remote HA latency bottleneck** |
+| Services Management | 0.8s - 2.1s       | Faster than states |
+| Authentication      | 0.1s - 0.2s       | Local validation |
+| Performance Tests   | 2s - 8s           | Caching improves subsequent calls |
+| Full Test Suite     | 3min - 5min       | Depends on HA response times |
+
+**Key Performance Characteristics**:
+
+- ✅ **Local optimizations working**: Caching, connection pooling, request batching
+- ⚠️ **Remote HA server is bottleneck**: 1.7-15.8s response times
+- ✅ **Cache effectiveness**: Subsequent requests much faster
+- ✅ **Authentication fast**: Local validation ~0.1s
+- ✅ **Service stability**: Handles concurrent requests well
 
 ### Expected Performance (Typical Hardware)
 

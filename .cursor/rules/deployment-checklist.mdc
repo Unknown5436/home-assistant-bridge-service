@@ -1,0 +1,51 @@
+---
+description: Production Deployment Checklist and Procedures
+alwaysApply: false
+---
+
+# Deployment Checklist
+
+## Pre-Deployment Validation
+
+- [ ] All tests pass (`python test_complete_ha_bridge.py full`)
+- [ ] Documentation updated and accurate
+- [ ] Performance validated (response time <2s)
+- [ ] Security review completed
+- [ ] UI functionality verified
+- [ ] Logs reviewed for errors
+- [ ] Environment variables configured
+- [ ] Dependencies installed and verified
+
+## Production Deployment
+
+- [ ] Follow `docs/DEPLOYMENT_GUIDE.md` procedures
+- [ ] Use Docker for containerized deployment
+- [ ] Configure environment variables properly
+- [ ] Implement health checks and monitoring
+- [ ] Set up log aggregation
+- [ ] Configure alerting for critical issues
+
+## Post-Deployment Validation
+
+- [ ] Service health check passes
+- [ ] Metrics dashboard functional
+- [ ] API endpoints responding correctly
+- [ ] Performance within targets
+- [ ] No critical errors in logs
+- [ ] Monitoring and alerting active
+
+## Environment Configuration
+
+- [ ] Copy `env.example` to `.env` for configuration
+- [ ] Set appropriate values for production
+- [ ] Secure sensitive configuration data
+- [ ] Validate configuration before deployment
+
+## Monitoring Setup
+
+- [ ] Enable Prometheus metrics collection
+- [ ] Configure log aggregation
+- [ ] Implement health check endpoints
+- [ ] Setup alerting for critical issues
+
+@DeploymentChecklist

@@ -1,0 +1,50 @@
+---
+description: UI Development Standards for HA Bridge Control Panel
+globs: ["ui/**/*.py"]
+alwaysApply: false
+---
+
+# UI Development Standards
+
+## PyQt6 Development
+
+- **MAINTAIN** dark theme consistency across all components
+- **FOLLOW** PyQt6 best practices and patterns
+- **USE** proper signal/slot connections
+- **IMPLEMENT** responsive layouts with proper sizing
+
+## Metrics Dashboard Integration
+
+- **USE** `ui/metrics_panel.py` as reference for new components
+- **IMPLEMENT** real-time data updates with background threads
+- **MAINTAIN** responsive layout for different window sizes
+- **ENSURE** proper error handling and graceful degradation
+
+## UI Testing Requirements
+
+- **VALIDATE** all UI components function correctly
+- **TEST** with `python test_metrics_dashboard.py`
+- **VERIFY** dark theme consistency
+- **CHECK** accessibility and usability
+
+## Component Structure
+
+- `ui/main_window.py` - Main application window with tabbed interface
+- `ui/metrics_panel.py` - Real-time metrics dashboard
+- `ui/service_controller.py` - Service management
+- `ui/startup_manager.py` - Windows startup management
+- `ui/tray_app.py` - System tray application
+
+## Dark Theme Standards
+
+- Background: `#1e1e1e`
+- Secondary background: `#2b2b2b`
+- Text: `#e0e0e0`
+- Accent colors: `#4CAF50` (success), `#FF9800` (warning), `#F44336` (error)
+
+## Data Fetching
+
+- **USE** background threads for data fetching
+- **IMPLEMENT** proper error handling for connection failures
+- **MAINTAIN** 5-second refresh intervals for real-time updates
+- **CACHE** data appropriately to reduce API calls

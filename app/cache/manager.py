@@ -2,6 +2,8 @@ import time
 from typing import Any, Dict, Optional, Union
 from cachetools import TTLCache
 import structlog
+import functools
+import inspect
 
 from app.config.settings import settings
 
@@ -17,18 +19,22 @@ class CacheManager:
         self._create_default_caches()
 
     def _create_default_caches(self):
-        """Create default cache instances."""
-        # States cache
-        self.caches["states"] = TTLCache(maxsize=1000, ttl=self.default_ttl)
+        """Create default cache instances with optimized TTL settings."""
+        # States cache - frequent changes, shorter TTL
+        self.caches["states"] = TTLCache(maxsize=2000, ttl=settings.STATES_CACHE_TTL)
 
-        # Services cache
-        self.caches["services"] = TTLCache(
-            maxsize=100, ttl=self.default_ttl * 2  # Services change less frequently
-        )
+        # Services cache - infrequent changes, longer TTL
+        self.caches["services"] = TTLCache(maxsize=200, ttl=settings.SERVICES_CACHE_TTL)
 
-        # Config cache
-        self.caches["config"] = TTLCache(
-            maxsize=10, ttl=self.default_ttl * 10  # Config changes rarely
+        # Config cache - very infrequent changes, longest TTL
+        self.caches["config"] = TTLCache(maxsize=50, ttl=settings.CONFIG_CACHE_TTL)
+
+        # Individual state cache - for single entity lookups
+        self.caches["state"] = TTLCache(maxsize=1000, ttl=settings.STATES_CACHE_TTL)
+
+        # Service domain cache - for domain-specific service lookups
+        self.caches["service_domain"] = TTLCache(
+            maxsize=100, ttl=settings.SERVICES_CACHE_TTL
         )
 
     def get(self, cache_name: str, key: str) -> Optional[Any]:
@@ -130,6 +136,40 @@ class CacheManager:
 
         logger.info("Cache created", cache_name=name, maxsize=maxsize, ttl=ttl)
 
+    async def warm_cache(self) -> None:
+        """Warm up frequently accessed caches."""
+        logger.info("Starting cache warming...")
+
+        try:
+            # Warm states cache
+            if "states" in self.caches:
+                from app.clients.ha_client import HomeAssistantClient
+
+                client = HomeAssistantClient()
+                try:
+                    states = await client.get_states()
+                    self.set("states", "all_states", states)
+                    logger.info("Warmed states cache", count=len(states))
+                except Exception as e:
+                    logger.warning("Failed to warm states cache", error=str(e))
+
+            # Warm services cache
+            if "services" in self.caches:
+                from app.clients.ha_client import HomeAssistantClient
+
+                client = HomeAssistantClient()
+                try:
+                    services = await client.get_services()
+                    self.set("services", "all_services", services)
+                    logger.info("Warmed services cache", count=len(services))
+                except Exception as e:
+                    logger.warning("Failed to warm services cache", error=str(e))
+
+            logger.info("Cache warming completed")
+
+        except Exception as e:
+            logger.error("Cache warming failed", error=str(e))
+
 
 # Global cache manager instance
 cache_manager = CacheManager()
@@ -159,6 +199,7 @@ def cached(cache_name: str, ttl: Optional[int] = None):
     """Decorator for caching function results."""
 
     def decorator(func):
+        @functools.wraps(func)
         async def wrapper(*args, **kwargs):
             # Generate cache key
             key = cache_key(func.__name__, *args, **kwargs)
@@ -173,11 +214,6 @@ def cached(cache_name: str, ttl: Optional[int] = None):
             cache_manager.set(cache_name, key, result, ttl)
 
             return result
-
-        # Preserve function metadata for FastAPI
-        wrapper.__name__ = func.__name__
-        wrapper.__doc__ = func.__doc__
-        wrapper.__annotations__ = func.__annotations__
 
         return wrapper
 

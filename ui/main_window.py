@@ -25,12 +25,14 @@ from PyQt6.QtWidgets import (
     QProgressBar,
     QSplitter,
     QScrollArea,
+    QTabWidget,
 )
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QThread, pyqtSlot
 from PyQt6.QtGui import QFont, QPalette, QColor, QIcon
 
 from ui.service_controller import ServiceController
 from ui.startup_manager import StartupManager
+from ui.metrics_panel import MetricsPanel
 from app.config.ui_config import ui_config
 
 logger = logging.getLogger(__name__)
@@ -590,14 +592,44 @@ class MainWindow(QMainWindow):
     def setup_ui(self):
         """Setup the main UI"""
         self.setWindowTitle("HA Bridge Control Panel")
-        self.setMinimumSize(800, 600)
+        self.setMinimumSize(1000, 700)
 
         # Central widget
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
 
         # Main layout
-        main_layout = QHBoxLayout(central_widget)
+        main_layout = QVBoxLayout(central_widget)
+
+        # Create tab widget
+        self.tab_widget = QTabWidget()
+        self.tab_widget.setStyleSheet(
+            """
+            QTabWidget::pane {
+                border: 1px solid #555;
+                background-color: #2b2b2b;
+            }
+            QTabBar::tab {
+                background-color: #3b3b3b;
+                color: #e0e0e0;
+                padding: 8px 16px;
+                margin-right: 2px;
+                border-top-left-radius: 4px;
+                border-top-right-radius: 4px;
+            }
+            QTabBar::tab:selected {
+                background-color: #4CAF50;
+                color: white;
+            }
+            QTabBar::tab:hover {
+                background-color: #555;
+            }
+        """
+        )
+
+        # Control Panel Tab
+        control_tab = QWidget()
+        control_layout = QHBoxLayout(control_tab)
 
         # Left panel (controls)
         left_panel = QWidget()
@@ -647,13 +679,22 @@ class MainWindow(QMainWindow):
 
         right_layout.addWidget(logs_group)
 
-        # Splitter
+        # Splitter for control tab
         splitter = QSplitter(Qt.Orientation.Horizontal)
         splitter.addWidget(left_panel)
         splitter.addWidget(right_panel)
         splitter.setSizes([400, 400])  # Equal sizes
 
-        main_layout.addWidget(splitter)
+        control_layout.addWidget(splitter)
+
+        # Add tabs
+        self.tab_widget.addTab(control_tab, "Control Panel")
+
+        # Metrics Dashboard Tab
+        self.metrics_panel = MetricsPanel()
+        self.tab_widget.addTab(self.metrics_panel, "Metrics Dashboard")
+
+        main_layout.addWidget(self.tab_widget)
 
         # Load initial logs
         self.refresh_logs()
