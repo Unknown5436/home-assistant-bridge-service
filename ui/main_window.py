@@ -117,6 +117,11 @@ class ServiceStatusWidget(QWidget):
         status_layout.addWidget(QLabel("PID:"), 3, 0)
         status_layout.addWidget(self.pid_label, 3, 1)
 
+        # WebSocket status
+        self.websocket_status = QLabel("Unknown")
+        status_layout.addWidget(QLabel("WebSocket:"), 4, 0)
+        status_layout.addWidget(self.websocket_status, 4, 1)
+
         layout.addWidget(status_group)
 
         # Control buttons
@@ -172,6 +177,24 @@ class ServiceStatusWidget(QWidget):
             # Update other fields
             self.uptime_label.setText(status.get("uptime", "N/A"))
             self.pid_label.setText(str(status.get("pid", "N/A")))
+
+            # Update WebSocket status
+            if status["running"] and status["health"]:
+                ws_status = self.service_controller.get_websocket_status()
+                if ws_status.get("connected"):
+                    self.websocket_status.setText("✓ Connected")
+                    self.websocket_status.setStyleSheet("color: #4caf50;")
+                else:
+                    error = ws_status.get("error", "Disconnected")
+                    attempts = ws_status.get("reconnect_attempts", 0)
+                    status_text = f"✗ {error}"
+                    if attempts > 0:
+                        status_text += f" (retry {attempts})"
+                    self.websocket_status.setText(status_text)
+                    self.websocket_status.setStyleSheet("color: #ff9800;")
+            else:
+                self.websocket_status.setText("—")
+                self.websocket_status.setStyleSheet("color: #888;")
 
             # Update button states
             self.start_btn.setEnabled(not status["running"])
@@ -282,25 +305,35 @@ class CacheControlWidget(QWidget):
 
         # Individual endpoint section label with warning
         individual_label = QLabel("Individual Endpoints (⚠ Use with Caution):")
-        individual_label.setStyleSheet("color: #f48771; font-weight: bold; margin-top: 5px;")
+        individual_label.setStyleSheet(
+            "color: #f48771; font-weight: bold; margin-top: 5px;"
+        )
         cache_layout.addWidget(individual_label, 5, 0, 1, 2)
 
         # Individual states caching
-        self.states_individual_cache = QCheckBox("Individual State Lookups (/states/{id})")
+        self.states_individual_cache = QCheckBox(
+            "Individual State Lookups (/states/{id})"
+        )
         self.states_individual_cache.stateChanged.connect(self.on_cache_changed)
         cache_layout.addWidget(self.states_individual_cache, 6, 0)
 
         states_warning = QLabel("⚠ May delay state updates")
-        states_warning.setStyleSheet("color: #f48771; font-size: 8pt; font-style: italic;")
+        states_warning.setStyleSheet(
+            "color: #f48771; font-size: 8pt; font-style: italic;"
+        )
         cache_layout.addWidget(states_warning, 6, 1)
 
         # Individual services caching
-        self.services_individual_cache = QCheckBox("Individual Service Lookups (/services/{domain})")
+        self.services_individual_cache = QCheckBox(
+            "Individual Service Lookups (/services/{domain})"
+        )
         self.services_individual_cache.stateChanged.connect(self.on_cache_changed)
         cache_layout.addWidget(self.services_individual_cache, 7, 0)
 
         services_warning = QLabel("⚠ May show stale services")
-        services_warning.setStyleSheet("color: #f48771; font-size: 8pt; font-style: italic;")
+        services_warning.setStyleSheet(
+            "color: #f48771; font-size: 8pt; font-style: italic;"
+        )
         cache_layout.addWidget(services_warning, 7, 1)
 
         # Info note
@@ -347,21 +380,25 @@ class CacheControlWidget(QWidget):
         """Load current cache settings"""
         try:
             settings = ui_config.get_all_settings()
-            
+
             # Block signals during initial load to prevent "Settings changed" message
             self.states_cache.blockSignals(True)
             self.services_cache.blockSignals(True)
             self.config_cache.blockSignals(True)
             self.states_individual_cache.blockSignals(True)
             self.services_individual_cache.blockSignals(True)
-            
+
             # Set checkbox states
             self.states_cache.setChecked(settings.cache.states_enabled)
             self.services_cache.setChecked(settings.cache.services_enabled)
             self.config_cache.setChecked(settings.cache.config_enabled)
-            self.states_individual_cache.setChecked(settings.cache.states_individual_enabled)
-            self.services_individual_cache.setChecked(settings.cache.services_individual_enabled)
-            
+            self.states_individual_cache.setChecked(
+                settings.cache.states_individual_enabled
+            )
+            self.services_individual_cache.setChecked(
+                settings.cache.services_individual_enabled
+            )
+
             # Re-enable signals
             self.states_cache.blockSignals(False)
             self.services_cache.blockSignals(False)
@@ -383,10 +420,16 @@ class CacheControlWidget(QWidget):
             ui_config.set_cache_setting("states", self.states_cache.isChecked())
             ui_config.set_cache_setting("services", self.services_cache.isChecked())
             ui_config.set_cache_setting("config", self.config_cache.isChecked())
-            ui_config.set_cache_setting("states_individual", self.states_individual_cache.isChecked())
-            ui_config.set_cache_setting("services_individual", self.services_individual_cache.isChecked())
+            ui_config.set_cache_setting(
+                "states_individual", self.states_individual_cache.isChecked()
+            )
+            ui_config.set_cache_setting(
+                "services_individual", self.services_individual_cache.isChecked()
+            )
 
-            self.status_msg.setText("✓ Settings saved successfully - Restart service to apply")
+            self.status_msg.setText(
+                "✓ Settings saved successfully - Restart service to apply"
+            )
             self.status_msg.setStyleSheet("color: #4ec9b0; font-size: 10pt;")
 
         except Exception as e:

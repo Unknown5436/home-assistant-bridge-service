@@ -1,4 +1,5 @@
 import time
+import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -50,14 +51,23 @@ async def lifespan(app: FastAPI):
 
     # Initialize WebSocket client if enabled
     if settings.WEBSOCKET_ENABLED:
+        logger.info(
+            "WebSocket client initialization starting",
+            ws_url=settings.HA_URL.replace("http://", "ws://").replace("https://", "wss://") + "/api/websocket"
+        )
         websocket_client = HomeAssistantWebSocketClient()
         connected = await websocket_client.connect()
         if connected:
-            logger.info("WebSocket client connected")
+            logger.info("WebSocket client connected successfully")
             metrics_collector.set_websocket_connection_status(True)
         else:
-            logger.warning("Failed to connect WebSocket client")
+            logger.warning(
+                "Initial WebSocket connection failed - will retry in background",
+                reconnect_attempts=websocket_client.reconnect_attempts
+            )
             metrics_collector.set_websocket_connection_status(False)
+            # Start background reconnection task
+            asyncio.create_task(websocket_client._attempt_reconnect())
 
     # Set initial HA connection status
     try:
@@ -77,6 +87,7 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down Home Assistant Bridge Service")
 
     if websocket_client:
+        websocket_client.should_reconnect = False  # Stop reconnection attempts
         await websocket_client.disconnect()
         logger.info("WebSocket client disconnected")
 
@@ -114,7 +125,7 @@ async def health_check():
     global websocket_client
 
     ha_connected = False
-    websocket_connected = False
+    websocket_info = None
 
     try:
         from app.clients.ha_client import HomeAssistantClient
@@ -125,14 +136,18 @@ async def health_check():
         logger.error("Health check HA connection failed", error=str(e))
 
     if websocket_client:
-        websocket_connected = websocket_client.is_connected()
+        websocket_info = {
+            "connected": websocket_client.is_connected(),
+            "reconnect_attempts": websocket_client.reconnect_attempts,
+            "subscriptions": len(websocket_client.active_subscriptions),
+        }
 
     return {
         "status": "healthy" if ha_connected else "degraded",
         "timestamp": time.time(),
         "version": "1.0.0",
         "ha_connected": ha_connected,
-        "websocket_connected": websocket_connected,
+        "websocket": websocket_info,
         "metrics_enabled": settings.METRICS_ENABLED,
         "websocket_enabled": settings.WEBSOCKET_ENABLED,
     }
@@ -163,8 +178,9 @@ async def status():
             "rate_limit_window": settings.RATE_LIMIT_WINDOW,
             "metrics_enabled": settings.METRICS_ENABLED,
             "websocket_enabled": settings.WEBSOCKET_ENABLED,
+            "websocket_filter_enabled": settings.WEBSOCKET_FILTER_ENABLED,
         },
-        "connections": {"ha_connected": False, "websocket_connected": False},
+        "connections": {"ha_connected": False, "websocket": None},
     }
 
     # Check HA connection
@@ -178,9 +194,11 @@ async def status():
 
     # Check WebSocket connection
     if websocket_client:
-        status_info["connections"][
-            "websocket_connected"
-        ] = websocket_client.is_connected()
+        status_info["connections"]["websocket"] = {
+            "connected": websocket_client.is_connected(),
+            "reconnect_attempts": websocket_client.reconnect_attempts,
+            "subscriptions": len(websocket_client.active_subscriptions),
+        }
 
     return status_info
 

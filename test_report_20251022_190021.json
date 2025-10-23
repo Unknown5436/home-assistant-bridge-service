@@ -1,0 +1,282 @@
+{
+  "timestamp": "2025-10-22T18:59:44.358392",
+  "test_mode": "full",
+  "statistics": {
+    "total_tests": 23,
+    "passed": 21,
+    "failed": 2,
+    "success_rate": 91.30434782608695,
+    "duration_seconds": 37.018815,
+    "avg_response_time": 1.1362420952838401,
+    "median_response_time": 0.9155411720275879,
+    "p95_response_time": 7.635387706756592,
+    "categories": {
+      "Core": {
+        "total": 5,
+        "passed": 5,
+        "failed": 0,
+        "success_rate": 100.0
+      },
+      "States": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "success_rate": 100.0
+      },
+      "Services": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0,
+        "success_rate": 100.0
+      },
+      "Security": {
+        "total": 4,
+        "passed": 4,
+        "failed": 0,
+        "success_rate": 100.0
+      },
+      "Performance": {
+        "total": 1,
+        "passed": 1,
+        "failed": 0,
+        "success_rate": 100.0
+      },
+      "Error Handling": {
+        "total": 4,
+        "passed": 3,
+        "failed": 1,
+        "success_rate": 75.0
+      },
+      "Advanced": {
+        "total": 3,
+        "passed": 2,
+        "failed": 1,
+        "success_rate": 66.66666666666666
+      }
+    }
+  },
+  "results": [
+    {
+      "name": "Health Check",
+      "category": "Core",
+      "success": true,
+      "status_code": 200,
+      "response_time": 8.435354471206665,
+      "error": null,
+      "details": {}
+    },
+    {
+      "name": "API Status",
+      "category": "Core",
+      "success": true,
+      "status_code": 200,
+      "response_time": 0.8896908760070801,
+      "error": null,
+      "details": {}
+    },
+    {
+      "name": "Service Health Check",
+      "category": "Core",
+      "success": true,
+      "status_code": 200,
+      "response_time": 0.004206180572509766,
+      "error": null,
+      "details": {}
+    },
+    {
+      "name": "Config Health",
+      "category": "Core",
+      "success": true,
+      "status_code": 200,
+      "response_time": 0.9431517124176025,
+      "error": null,
+      "details": {}
+    },
+    {
+      "name": "Metrics Endpoint",
+      "category": "Core",
+      "success": true,
+      "status_code": 200,
+      "response_time": 0.006426811218261719,
+      "error": null,
+      "details": {}
+    },
+    {
+      "name": "Get All States",
+      "category": "States",
+      "success": true,
+      "status_code": 200,
+      "response_time": 1.0019021034240723,
+      "error": null,
+      "details": {
+        "entity_count": 1183
+      }
+    },
+    {
+      "name": "Get Specific Entity",
+      "category": "States",
+      "success": true,
+      "status_code": 200,
+      "response_time": 0.9067091941833496,
+      "error": null,
+      "details": {}
+    },
+    {
+      "name": "Get Non-existent Entity",
+      "category": "States",
+      "success": true,
+      "status_code": 500,
+      "response_time": 0.9229207038879395,
+      "error": "{\"detail\":\"Failed to retrieve state for sensor.does_not_exist: Failed to retrieve state for sensor.does_not_exist: Client error '404 Not Found' for url 'https://raspberrypieha.duckdns.org:8123/api/sta",
+      "details": {}
+    },
+    {
+      "name": "Get All Services",
+      "category": "Services",
+      "success": true,
+      "status_code": 200,
+      "response_time": 0.9618411064147949,
+      "error": null,
+      "details": {
+        "service_count": 347,
+        "domain_count": 85
+      }
+    },
+    {
+      "name": "Get Light Domain Services",
+      "category": "Services",
+      "success": true,
+      "status_code": 200,
+      "response_time": 0.9210348129272461,
+      "error": null,
+      "details": {}
+    },
+    {
+      "name": "Get Non-existent Domain",
+      "category": "Services",
+      "success": true,
+      "status_code": 200,
+      "response_time": 0.9028356075286865,
+      "error": null,
+      "details": {}
+    },
+    {
+      "name": "No Authentication",
+      "category": "Security",
+      "success": true,
+      "status_code": 401,
+      "response_time": 0.0019953250885009766,
+      "error": "{\"error\":\"Invalid or missing API key\",\"timestamp\":1761174001.3789227}",
+      "details": {}
+    },
+    {
+      "name": "Invalid API Key",
+      "category": "Security",
+      "success": true,
+      "status_code": 401,
+      "response_time": 0.0032978057861328125,
+      "error": "{\"error\":\"Invalid or missing API key\",\"timestamp\":1761174001.3822453}",
+      "details": {}
+    },
+    {
+      "name": "Valid API Key",
+      "category": "Security",
+      "success": true,
+      "status_code": 200,
+      "response_time": 0.8764972686767578,
+      "error": null,
+      "details": {}
+    },
+    {
+      "name": "Public Endpoint Access",
+      "category": "Security",
+      "success": true,
+      "status_code": 200,
+      "response_time": 0.9178383350372314,
+      "error": null,
+      "details": {}
+    },
+    {
+      "name": "Response Time Performance",
+      "category": "Performance",
+      "success": true,
+      "status_code": 0,
+      "response_time": 0.9476987361907959,
+      "error": null,
+      "details": {
+        "avg_time": "0.948s",
+        "median_time": "0.955s",
+        "min_time": "0.894s",
+        "max_time": "0.984s",
+        "cache_effective": false
+      }
+    },
+    {
+      "name": "Non-existent Endpoint",
+      "category": "Error Handling",
+      "success": true,
+      "status_code": 404,
+      "response_time": 4.435520648956299,
+      "error": "{\"detail\":\"Not Found\"}",
+      "details": {}
+    },
+    {
+      "name": "Invalid Entity ID Format",
+      "category": "Error Handling",
+      "success": false,
+      "status_code": 500,
+      "response_time": 1.1917777061462402,
+      "error": "{\"detail\":\"Failed to retrieve state for invalid_format: Failed to retrieve state for invalid_format: Client error '404 Not Found' for url 'https://raspberrypieha.duckdns.org:8123/api/states/invalid_fo",
+      "details": {}
+    },
+    {
+      "name": "Malformed Entity Request",
+      "category": "Error Handling",
+      "success": true,
+      "status_code": 404,
+      "response_time": 0.003869295120239258,
+      "error": "{\"detail\":\"Not Found\"}",
+      "details": {}
+    },
+    {
+      "name": "Method Not Allowed",
+      "category": "Error Handling",
+      "success": true,
+      "status_code": 405,
+      "response_time": 0.0035636425018310547,
+      "error": "{\"detail\":\"Method Not Allowed\"}",
+      "details": {}
+    },
+    {
+      "name": "Prometheus Metrics Format",
+      "category": "Advanced",
+      "success": false,
+      "status_code": 200,
+      "response_time": 0.010252952575683594,
+      "error": null,
+      "details": {
+        "has_prometheus_format": false
+      }
+    },
+    {
+      "name": "WebSocket Status Check",
+      "category": "Advanced",
+      "success": true,
+      "status_code": 200,
+      "response_time": 0.9155411720275879,
+      "error": null,
+      "details": {
+        "websocket_status": "unknown"
+      }
+    },
+    {
+      "name": "Configuration Info",
+      "category": "Advanced",
+      "success": true,
+      "status_code": 200,
+      "response_time": 0.9296417236328125,
+      "error": null,
+      "details": {}
+    }
+  ]
+}

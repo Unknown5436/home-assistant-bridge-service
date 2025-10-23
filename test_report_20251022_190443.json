@@ -1,0 +1,291 @@
+{
+  "timestamp": "2025-10-22T19:04:37.449807",
+  "test_mode": "full",
+  "statistics": {
+    "total_tests": 24,
+    "passed": 10,
+    "failed": 14,
+    "success_rate": 41.66666666666667,
+    "duration_seconds": 5.664336,
+    "avg_response_time": 0.15637110670407614,
+    "median_response_time": 0.0028433799743652344,
+    "p95_response_time": 0.9563561677932739,
+    "categories": {
+      "Core": {
+        "total": 5,
+        "passed": 4,
+        "failed": 1,
+        "success_rate": 80.0
+      },
+      "States": {
+        "total": 3,
+        "passed": 0,
+        "failed": 3,
+        "success_rate": 0.0
+      },
+      "Services": {
+        "total": 3,
+        "passed": 0,
+        "failed": 3,
+        "success_rate": 0.0
+      },
+      "Security": {
+        "total": 4,
+        "passed": 3,
+        "failed": 1,
+        "success_rate": 75.0
+      },
+      "Performance": {
+        "total": 2,
+        "passed": 1,
+        "failed": 1,
+        "success_rate": 50.0
+      },
+      "Error Handling": {
+        "total": 4,
+        "passed": 0,
+        "failed": 4,
+        "success_rate": 0.0
+      },
+      "Advanced": {
+        "total": 3,
+        "passed": 2,
+        "failed": 1,
+        "success_rate": 66.66666666666666
+      }
+    }
+  },
+  "results": [
+    {
+      "name": "Health Check",
+      "category": "Core",
+      "success": true,
+      "status_code": 200,
+      "response_time": 0.9262170791625977,
+      "error": null,
+      "details": {}
+    },
+    {
+      "name": "API Status",
+      "category": "Core",
+      "success": true,
+      "status_code": 200,
+      "response_time": 0.8412580490112305,
+      "error": null,
+      "details": {}
+    },
+    {
+      "name": "Service Health Check",
+      "category": "Core",
+      "success": true,
+      "status_code": 200,
+      "response_time": 0.0016705989837646484,
+      "error": null,
+      "details": {}
+    },
+    {
+      "name": "Config Health",
+      "category": "Core",
+      "success": false,
+      "status_code": 401,
+      "response_time": 0.002590656280517578,
+      "error": "{\"error\":\"Invalid or missing API key\",\"timestamp\":1761174280.2856522}",
+      "details": {}
+    },
+    {
+      "name": "Metrics Endpoint",
+      "category": "Core",
+      "success": true,
+      "status_code": 200,
+      "response_time": 0.013189077377319336,
+      "error": null,
+      "details": {}
+    },
+    {
+      "name": "Get All States",
+      "category": "States",
+      "success": false,
+      "status_code": 401,
+      "response_time": 0.0038881301879882812,
+      "error": "{\"error\":\"Invalid or missing API key\",\"timestamp\":1761174280.3054638}",
+      "details": {}
+    },
+    {
+      "name": "Get Specific Entity",
+      "category": "States",
+      "success": false,
+      "status_code": 401,
+      "response_time": 0.001800537109375,
+      "error": "{\"error\":\"Invalid or missing API key\",\"timestamp\":1761174280.3105543}",
+      "details": {}
+    },
+    {
+      "name": "Get Non-existent Entity",
+      "category": "States",
+      "success": false,
+      "status_code": 401,
+      "response_time": 0.0013737678527832031,
+      "error": "{\"error\":\"Invalid or missing API key\",\"timestamp\":1761174280.3124099}",
+      "details": {}
+    },
+    {
+      "name": "Get All Services",
+      "category": "Services",
+      "success": false,
+      "status_code": 401,
+      "response_time": 0.0014810562133789062,
+      "error": "{\"error\":\"Invalid or missing API key\",\"timestamp\":1761174280.3145423}",
+      "details": {}
+    },
+    {
+      "name": "Get Light Domain Services",
+      "category": "Services",
+      "success": false,
+      "status_code": 401,
+      "response_time": 0.002663135528564453,
+      "error": "{\"error\":\"Invalid or missing API key\",\"timestamp\":1761174280.316363}",
+      "details": {}
+    },
+    {
+      "name": "Get Non-existent Domain",
+      "category": "Services",
+      "success": false,
+      "status_code": 401,
+      "response_time": 0.0028743743896484375,
+      "error": "{\"error\":\"Invalid or missing API key\",\"timestamp\":1761174280.3209925}",
+      "details": {}
+    },
+    {
+      "name": "No Authentication",
+      "category": "Security",
+      "success": true,
+      "status_code": 401,
+      "response_time": 0.005734682083129883,
+      "error": "{\"error\":\"Invalid or missing API key\",\"timestamp\":1761174280.3260243}",
+      "details": {}
+    },
+    {
+      "name": "Invalid API Key",
+      "category": "Security",
+      "success": true,
+      "status_code": 401,
+      "response_time": 0.004293203353881836,
+      "error": "{\"error\":\"Invalid or missing API key\",\"timestamp\":1761174280.3330212}",
+      "details": {}
+    },
+    {
+      "name": "Valid API Key",
+      "category": "Security",
+      "success": false,
+      "status_code": 401,
+      "response_time": 0.0015628337860107422,
+      "error": "{\"error\":\"Invalid or missing API key\",\"timestamp\":1761174280.3353543}",
+      "details": {}
+    },
+    {
+      "name": "Public Endpoint Access",
+      "category": "Security",
+      "success": true,
+      "status_code": 200,
+      "response_time": 0.8947396278381348,
+      "error": null,
+      "details": {}
+    },
+    {
+      "name": "Response Time Performance",
+      "category": "Performance",
+      "success": true,
+      "status_code": 0,
+      "response_time": 0.0028123855590820312,
+      "error": null,
+      "details": {
+        "avg_time": "0.003s",
+        "median_time": "0.002s",
+        "min_time": "0.002s",
+        "max_time": "0.005s",
+        "cache_effective": true
+      }
+    },
+    {
+      "name": "Concurrent Request Handling",
+      "category": "Performance",
+      "success": false,
+      "status_code": 0,
+      "response_time": 0.05402636528015137,
+      "error": null,
+      "details": {
+        "successful": 0,
+        "total": 10,
+        "time": "0.054s",
+        "avg_per_request": "0.005s"
+      }
+    },
+    {
+      "name": "Non-existent Endpoint",
+      "category": "Error Handling",
+      "success": false,
+      "status_code": 401,
+      "response_time": 0.002985715866088867,
+      "error": "{\"error\":\"Invalid or missing API key\",\"timestamp\":1761174282.1207163}",
+      "details": {}
+    },
+    {
+      "name": "Invalid Entity ID Format",
+      "category": "Error Handling",
+      "success": false,
+      "status_code": 401,
+      "response_time": 0.0018496513366699219,
+      "error": "{\"error\":\"Invalid or missing API key\",\"timestamp\":1761174282.12366}",
+      "details": {}
+    },
+    {
+      "name": "Malformed Entity Request",
+      "category": "Error Handling",
+      "success": false,
+      "status_code": 401,
+      "response_time": 0.002104520797729492,
+      "error": "{\"error\":\"Invalid or missing API key\",\"timestamp\":1761174282.1260211}",
+      "details": {}
+    },
+    {
+      "name": "Method Not Allowed",
+      "category": "Error Handling",
+      "success": false,
+      "status_code": 401,
+      "response_time": 0.001645803451538086,
+      "error": "{\"error\":\"Invalid or missing API key\",\"timestamp\":1761174282.1283402}",
+      "details": {}
+    },
+    {
+      "name": "Prometheus Metrics Format",
+      "category": "Advanced",
+      "success": true,
+      "status_code": 200,
+      "response_time": 0.013265609741210938,
+      "error": null,
+      "details": {
+        "has_prometheus_format": true
+      }
+    },
+    {
+      "name": "WebSocket Status Check",
+      "category": "Advanced",
+      "success": true,
+      "status_code": 200,
+      "response_time": 0.966402530670166,
+      "error": null,
+      "details": {
+        "websocket_status": "unknown"
+      }
+    },
+    {
+      "name": "Configuration Info",
+      "category": "Advanced",
+      "success": false,
+      "status_code": 401,
+      "response_time": 0.0024771690368652344,
+      "error": "{\"error\":\"Invalid or missing API key\",\"timestamp\":1761174283.1124873}",
+      "details": {}
+    }
+  ]
+}

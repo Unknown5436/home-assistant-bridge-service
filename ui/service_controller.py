@@ -324,3 +324,20 @@ class ServiceController:
                 pass
 
         return info
+
+    def get_websocket_status(self) -> Dict[str, Any]:
+        """Get WebSocket connection status from service."""
+        try:
+            import requests
+
+            response = requests.get(f"{self.service_url}/health", timeout=5)
+            if response.status_code == 200:
+                data = response.json()
+                return data.get(
+                    "websocket",
+                    {"connected": False, "error": "WebSocket info not available"},
+                )
+        except Exception as e:
+            logger.error(f"Failed to get WebSocket status: {e}")
+
+        return {"connected": False, "error": "Service not responding"}

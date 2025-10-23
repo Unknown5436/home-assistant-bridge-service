@@ -32,35 +32,40 @@ A secure FastAPI-based intermediary service that enables Cursor AI to interact w
 ### Installation
 
 1. **Clone the repository:**
+
    ```bash
    git clone https://github.com/Unknown5436/home-assistant-bridge-service.git
    cd home-assistant-bridge-service
    ```
 
 2. **Install dependencies:**
+
    ```bash
    pip install -r requirements.txt
    ```
 
 3. **Configure environment:**
+
    ```bash
    cp env.example .env
    # Edit .env with your Home Assistant settings
    ```
 
 4. **Run the service:**
+
    ```bash
    python start.py
    ```
 
 5. **Launch the Control Panel (Optional):**
+
    ```bash
    # Show main window
    python ui_launcher.py --startup-mode show_window
-   
+
    # Start minimized to system tray
    python ui_launcher.py --minimized
-   
+
    # Auto-start service and show window
    python ui_launcher.py --auto-start-service --startup-mode show_window
    ```
@@ -135,6 +140,7 @@ For detailed UI documentation, see [UI_README.md](UI_README.md).
 ### Home Assistant Setup
 
 1. **Create a Long-lived Access Token:**
+
    - Go to Home Assistant → Profile → Long-lived access tokens
    - Create a new token and copy it to your `.env` file
 
@@ -145,12 +151,15 @@ For detailed UI documentation, see [UI_README.md](UI_README.md).
 ## 📚 API Documentation
 
 ### Base URL
+
 ```
 http://localhost:8000/api/v1
 ```
 
 ### Authentication
+
 All API endpoints (except `/health`, `/metrics`) require authentication:
+
 ```bash
 curl -H "Authorization: Bearer your-api-key" http://localhost:8000/api/v1/states/
 ```
@@ -158,6 +167,7 @@ curl -H "Authorization: Bearer your-api-key" http://localhost:8000/api/v1/states
 ### Core Endpoints
 
 #### States
+
 - `GET /api/v1/states/` - Get all entity states
 - `GET /api/v1/states/{entity_id}` - Get specific entity state
 - `POST /api/v1/states/{entity_id}` - Update entity state
@@ -165,16 +175,19 @@ curl -H "Authorization: Bearer your-api-key" http://localhost:8000/api/v1/states
 - `POST /api/v1/states/group/{group_id}/batch` - Batch update group states
 
 #### Services
+
 - `GET /api/v1/services/` - Get available services
 - `POST /api/v1/services/{domain}/{service}` - Call service
 - `POST /api/v1/services/batch` - Batch call services
 - `GET /api/v1/services/{domain}` - Get domain services
 
 #### Configuration
+
 - `GET /api/v1/config/` - Get HA configuration
 - `GET /api/v1/config/health` - Check HA connection health
 
 #### System
+
 - `GET /health` - Service health check
 - `GET /metrics` - Prometheus metrics
 - `GET /status` - Detailed service status
@@ -182,12 +195,14 @@ curl -H "Authorization: Bearer your-api-key" http://localhost:8000/api/v1/states
 ### Example Usage
 
 #### Get All States
+
 ```bash
 curl -H "Authorization: Bearer your-api-key" \
      http://localhost:8000/api/v1/states/
 ```
 
 #### Turn On a Light
+
 ```bash
 curl -X POST \
      -H "Authorization: Bearer your-api-key" \
@@ -197,6 +212,7 @@ curl -X POST \
 ```
 
 #### Call a Service
+
 ```bash
 curl -X POST \
      -H "Authorization: Bearer your-api-key" \
@@ -206,6 +222,7 @@ curl -X POST \
 ```
 
 #### Batch Operations
+
 ```bash
 curl -X POST \
      -H "Authorization: Bearer your-api-key" \
@@ -324,11 +341,13 @@ The project follows Python best practices:
 ### Common Issues
 
 1. **Connection to Home Assistant fails:**
+
    - Check `HA_URL` is correct and accessible
    - Verify `HA_TOKEN` is valid and has proper permissions
    - Ensure Home Assistant is running and API is enabled
 
 2. **Authentication errors:**
+
    - Verify API key is in the `API_KEYS` list
    - Check Authorization header format: `Bearer <key>`
    - Ensure rate limits aren't exceeded
