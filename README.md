@@ -17,6 +17,8 @@ A secure FastAPI-based intermediary service that enables Cursor AI to interact w
 - **🐳 Docker Support** - Easy deployment with Docker and Docker Compose
 - **🧪 Comprehensive Testing** - Unit and integration tests included
 - **🔄 Batch Operations** - Efficient bulk operations for multiple entities
+- **🖥️ Control Panel UI** - Modern desktop application for service management
+- **⚙️ Granular Cache Control** - Fine-tuned caching with HA server strain warnings
 
 ## 🚀 Quick Start
 
@@ -25,6 +27,7 @@ A secure FastAPI-based intermediary service that enables Cursor AI to interact w
 - Python 3.11+
 - Home Assistant instance with API access
 - Docker (optional, for containerized deployment)
+- PyQt6 (for control panel UI - automatically installed)
 
 ### Installation
 
@@ -50,6 +53,18 @@ A secure FastAPI-based intermediary service that enables Cursor AI to interact w
    python start.py
    ```
 
+5. **Launch the Control Panel (Optional):**
+   ```bash
+   # Show main window
+   python ui_launcher.py --startup-mode show_window
+   
+   # Start minimized to system tray
+   python ui_launcher.py --minimized
+   
+   # Auto-start service and show window
+   python ui_launcher.py --auto-start-service --startup-mode show_window
+   ```
+
 ### Docker Deployment
 
 ```bash
@@ -60,6 +75,47 @@ docker-compose up -d
 docker build -t ha-bridge .
 docker run -p 8000:8000 --env-file .env ha-bridge
 ```
+
+## 🖥️ Control Panel UI
+
+The service includes a modern desktop control panel for easy management:
+
+### Features
+
+- **Service Status Monitoring** - Real-time status, uptime, and PID display
+- **Service Controls** - Start, stop, restart, and test connection
+- **Cache Management** - Granular control over caching with Home Assistant server strain warnings
+- **Startup Configuration** - Windows login startup and behavior settings
+- **Real-time Logs** - Live service logs with auto-refresh
+- **System Tray Integration** - Background operation with status icon
+- **Modern Dark Theme** - Clean, professional interface
+
+### Usage
+
+```bash
+# Launch with main window visible
+python ui_launcher.py --startup-mode show_window
+
+# Start minimized to system tray
+python ui_launcher.py --minimized
+
+# Auto-start service if not running
+python ui_launcher.py --auto-start-service
+
+# Show all options
+python ui_launcher.py --help
+```
+
+### Cache Control
+
+The UI provides detailed cache management:
+
+- **Bulk Endpoints** (Recommended) - `/all` endpoints with efficient caching
+- **Individual Endpoints** (Use with Caution) - Per-entity caching with warnings
+- **Home Assistant Server Strain** - Clear warnings about increased server load
+- **Real-time Application** - Changes require service restart
+
+For detailed UI documentation, see [UI_README.md](UI_README.md).
 
 ## ⚙️ Configuration
 
@@ -172,6 +228,10 @@ curl -X POST \
 5. **Cache Manager** - In-memory caching with TTL
 6. **Metrics Collector** - Prometheus metrics for monitoring
 7. **Route Handlers** - API endpoint implementations
+8. **Control Panel UI** - PyQt6 desktop application for service management
+9. **UI Configuration Manager** - Dynamic settings management
+10. **Service Controller** - Process lifecycle management
+11. **Startup Manager** - Windows startup integration
 
 ### Security Features
 
@@ -310,6 +370,10 @@ For issues and questions:
 
 ## 🌟 Features Roadmap
 
+- [x] Desktop control panel UI
+- [x] Granular cache management
+- [x] System tray integration
+- [x] Windows startup management
 - [ ] Redis caching backend
 - [ ] Database persistence for metrics
 - [ ] Advanced automation triggers
